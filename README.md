@@ -1,3 +1,11 @@
+```
+   ____                _                         __          __
+  / __ )_______  ______(_)___  ____ _      ____ _/ /_  ____ _/ /_
+ / __  / ___/ / / / __/ / __ \\/ __ \\ | /| / / __ `/ __ \\/ __ `/ __/
+/ /_/ / /  / /_/ / /_/ / / / / /_/ / |/ |/ / /_/ / / / / /_/ / /_
+/_____/_/   \\__,_/\\__/_/_/ /_/\\____/|__/|__/\\__,_/_/ /_/\\__,_/\\__/
+```
+
 # brAInwav Wikidata CLI helps developers query Wikidata safely and quickly
 
 Safe, script-friendly CLI for Wikidata REST, SPARQL, and Action API queries. Read-only by default.
@@ -99,4 +107,3 @@ Fix: retry after a short delay or lower request frequency.
   - `wikidata raw request <method> <path>`
   - `wikidata auth login|status|logout`
   - `wikidata doctor`
-

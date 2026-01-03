@@ -16,7 +16,7 @@ Last updated: 2026-01-03
 
 ## Quickstart
 ### 1) Report a vulnerability
-- Use GitHub Security Advisories for this repository.
+- Use GitHub Security Advisories for this repository or email jscraik@brainwav.io.
 
 ### 2) Verify
 Expected outcome:
@@ -33,7 +33,7 @@ Expected outcome:
 ## Troubleshooting
 ### Symptom: you cannot access advisories
 Cause: repo settings may restrict advisories.
-Fix: open a private issue or contact a maintainer through GitHub.
+Fix: contact jscraik@brainwav.io with details and a reproduction.
 
 ## Reference
 - Dependency scanning: run `npm audit` and review `npm audit --json` output.
