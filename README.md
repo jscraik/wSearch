@@ -6,6 +6,11 @@
 /_____/_/   \\__,_/\\__/_/_/ /_/\\____/|__/|__/\\__,_/_/ /_/\\__,_/\\__/
 ```
 
+[![npm](https://img.shields.io/npm/v/wikidata-cli?color=d97757)](https://www.npmjs.com/package/wikidata-cli)
+[![ci](https://github.com/jscraik/wikidata-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/jscraik/wikidata-CLI/actions/workflows/ci.yml)
+[![security](https://img.shields.io/badge/security-policy-6a9bcc)](SECURITY.md)
+[![license](https://img.shields.io/badge/license-MIT-788c5d)](LICENSE)
+
 # brAInwav Wikidata CLI helps developers query Wikidata safely and quickly
 
 Safe, script-friendly CLI for Wikidata REST, SPARQL, and Action API queries. Read-only by default.
@@ -96,7 +101,7 @@ Cause: API throttling.
 Fix: retry after a short delay or lower request frequency.
 
 ## Reference
-- Docs: `docs/GETTING_STARTED.md`, `docs/USAGE.md`, `docs/CONFIG.md`, `docs/TROUBLESHOOTING.md`.
+- Docs: `docs/GETTING_STARTED.md`, `docs/USAGE.md`, `docs/CONFIG.md`, `docs/TROUBLESHOOTING.md`, `docs/FAQ.md`.
 - Changelog: `CHANGELOG.md` (Keep a Changelog).
 - License: `LICENSE` (MIT).
 - Brand guidelines: `docs/BRAND.md`.

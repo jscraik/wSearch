@@ -31,6 +31,7 @@ Expected outcome:
 - Architecture: `docs/ARCHITECTURE.md`
 - Security: `docs/SECURITY.md`
 - Brand: `docs/BRAND.md`
+- FAQ: `docs/FAQ.md`
 
 ## Troubleshooting
 ### Symptom: you are not sure where to start
