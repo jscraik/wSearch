@@ -1,18 +1,13 @@
 ```
-$ whoami
-brAInwav
-
 $ wikidata --help
- __          ___ _    _     _       _           _        _____ _     ___ 
- \ \        / (_) |  (_)   | |     | |         | |      / ____| |   |_ _|
-  \ \  /\  / / _| | __ _  __| | __ _| |_ __ _  | | ___ | |    | |    | | 
-   \ \/  \/ / | | |/ _` |/ _` |/ _` | __/ _` | | |/ _ \| |    | |    | | 
-    \  /\  /  | | | (_| | (_| | (_| | || (_| | | |  __/| |____| |___ | | 
-     \/  \/   |_|_|\__,_|\__,_|\__,_|\__\__,_| |_|\___| \_____|_____|___|
+W   W  I  K   K  I  DDDD   A   TTTTT  A
+W   W  I  K  K   I  D   D A A    T   A A
+W W W  I  K K    I  D   D A A    T  A   A
+WW WW  I  KK     I  D   D AAAAA  T  AAAAA
+W   W  I  K K    I  D   D A   A  T  A   A
+W   W  I  K  K   I  DDDD  A   A  T  A   A
 
- brAInwav · Wikidata CLI
-
-$ _
+brAInwav · Wikidata
 ```
 
 [![npm](https://img.shields.io/npm/v/wikidata-cli?color=d97757)](https://www.npmjs.com/package/wikidata-cli)
