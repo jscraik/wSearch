@@ -301,7 +301,8 @@ function outputResult<T>(
 }
 
 async function resolveQueryInput({ query, file }: { query?: string; file?: string }, noInput: boolean) {
-  if (query) return query;
+  const normalizedQuery = query === "query" ? undefined : query;
+  if (normalizedQuery) return normalizedQuery;
   if (file) return readFile(file);
   if (!process.stdin.isTTY) return readStdin();
   if (noInput) throw new Error("Query input required. Provide --query, --file, or stdin.");
