@@ -98,4 +98,68 @@ describe("cli config", () => {
       path.join(tmpDir, "wsearch-cli", "config.json"),
     );
   });
+
+  it("rejects NaN timeout value", () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "wiki-cli-"));
+    const env = { XDG_CONFIG_HOME: tmpDir };
+    const configPath = path.join(tmpDir, "wsearch-cli", "config.json");
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.writeFileSync(configPath, JSON.stringify({ timeout: NaN }));
+    
+    const result = runCli(["doctor"], { env });
+    
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    expect(result.stderr).toContain("must be a valid number");
+  });
+});
+
+describe("cli passphrase validation", () => {
+  it("rejects short passphrase from file", () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "wiki-cli-"));
+    const env = { XDG_CONFIG_HOME: tmpDir };
+    const tmpFile = path.join(tmpDir, "token.txt");
+    fs.writeFileSync(tmpFile, "short");
+    
+    const result = runCli(
+      [
+        "auth",
+        "login",
+        "--token-file",
+        tmpFile,
+        "--passphrase-file",
+        tmpFile,
+        "--non-interactive",
+      ],
+      { env }
+    );
+    
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    expect(result.stderr).toContain("at least 8 characters");
+    expect(result.status).not.toBe(0);
+  });
+
+  it("accepts 8-character passphrase", () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "wiki-cli-"));
+    const env = { XDG_CONFIG_HOME: tmpDir };
+    const tokenFile = path.join(tmpDir, "token.txt");
+    const passFile = path.join(tmpDir, "pass.txt");
+    fs.writeFileSync(tokenFile, "test-token-123");
+    fs.writeFileSync(passFile, "12345678");
+    
+    const result = runCli(
+      [
+        "auth",
+        "login",
+        "--token-file",
+        tokenFile,
+        "--passphrase-file",
+        passFile,
+        "--non-interactive",
+      ],
+      { env }
+    );
+    
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    expect(result.status).toBe(0);
+  });
 });

@@ -10,4 +10,33 @@ describe("readBody", () => {
     const body = await readBody(response);
     expect(body).toEqual(payload);
   });
+
+  describe("empty responses", () => {
+    it("handles 204 No Content", async () => {
+      const response = new Response(null, { status: 204 });
+      const body = await readBody(response);
+      expect(body).toBeNull();
+    });
+
+    it("handles empty JSON body", async () => {
+      const response = new Response("", {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+      const body = await readBody(response);
+      expect(body).toBeNull();
+    });
+
+    it("handles content-length: 0", async () => {
+      const response = new Response("", {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "content-length": "0"
+        }
+      });
+      const body = await readBody(response);
+      expect(body).toBeNull();
+    });
+  });
 });

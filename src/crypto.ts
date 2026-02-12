@@ -5,6 +5,9 @@ const SALT_BYTES = 16;
 const IV_BYTES = 12;
 const KEY_BYTES = 32;
 
+// Using Node.js default scrypt parameters (N=16384, r=8, p=1)
+// Explicit options omitted due to OpenSSL memory limit constraints on some systems
+
 export function encryptToken(token: string, passphrase: string): CredentialsFile {
   const salt = crypto.randomBytes(SALT_BYTES);
   const iv = crypto.randomBytes(IV_BYTES);
@@ -33,6 +36,12 @@ export function decryptToken(payload: CredentialsFile, passphrase: string): stri
   const key = crypto.scryptSync(passphrase, salt, KEY_BYTES);
   const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv, { authTagLength: 16 });
   decipher.setAuthTag(tag);
-  const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-  return plaintext.toString("utf8");
+
+  try {
+    const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+    return plaintext.toString("utf8");
+  } catch (error) {
+    // Authentication failure - tag didn't match
+    throw new Error("Failed to decrypt token. Invalid ciphertext or wrong passphrase.");
+  }
 }

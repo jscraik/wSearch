@@ -104,20 +104,20 @@ function loadConfigDefaults(): Partial<CliGlobals> {
   if (config.actionUrl) defaults.actionUrl = config.actionUrl;
   if (config.sparqlUrl) defaults.sparqlUrl = config.sparqlUrl;
   if (typeof config.timeout !== "undefined") {
-    if (typeof config.timeout !== "number") {
-      throw new CliError("Config timeout must be a number.", 2, "E_VALIDATION");
+    if (typeof config.timeout !== "number" || Number.isNaN(config.timeout)) {
+      throw new CliError("Config timeout must be a valid number.", 2, "E_VALIDATION");
     }
     defaults.timeout = config.timeout;
   }
   if (typeof config.retries !== "undefined") {
-    if (typeof config.retries !== "number") {
-      throw new CliError("Config retries must be a number.", 2, "E_VALIDATION");
+    if (typeof config.retries !== "number" || Number.isNaN(config.retries)) {
+      throw new CliError("Config retries must be a valid number.", 2, "E_VALIDATION");
     }
     defaults.retries = config.retries;
   }
   if (typeof config.retryBackoff !== "undefined") {
-    if (typeof config.retryBackoff !== "number") {
-      throw new CliError("Config retry-backoff must be a number.", 2, "E_VALIDATION");
+    if (typeof config.retryBackoff !== "number" || Number.isNaN(config.retryBackoff)) {
+      throw new CliError("Config retry-backoff must be a valid number.", 2, "E_VALIDATION");
     }
     defaults.retryBackoff = config.retryBackoff;
   }
@@ -133,18 +133,42 @@ function loadEnvOverrides(): Partial<CliGlobals> {
   if (env.WIKI_SPARQL_URL) overrides.sparqlUrl = env.WIKI_SPARQL_URL;
   if (env.WIKI_TIMEOUT) {
     const value = Number(env.WIKI_TIMEOUT);
-    assertNumber("timeout", value, { min: 1, integer: true });
-    overrides.timeout = value;
+    try {
+      assertNumber("timeout", value, { min: 1, integer: true });
+      overrides.timeout = value;
+    } catch (error) {
+      throw new CliError(
+        `Environment variable WIKI_TIMEOUT must be a positive integer: ${env.WIKI_TIMEOUT}`,
+        2,
+        "E_VALIDATION"
+      );
+    }
   }
   if (env.WIKI_RETRIES) {
     const value = Number(env.WIKI_RETRIES);
-    assertNumber("retries", value, { min: 0, integer: true });
-    overrides.retries = value;
+    try {
+      assertNumber("retries", value, { min: 0, integer: true });
+      overrides.retries = value;
+    } catch (error) {
+      throw new CliError(
+        `Environment variable WIKI_RETRIES must be a non-negative integer: ${env.WIKI_RETRIES}`,
+        2,
+        "E_VALIDATION"
+      );
+    }
   }
   if (env.WIKI_RETRY_BACKOFF) {
     const value = Number(env.WIKI_RETRY_BACKOFF);
-    assertNumber("retry-backoff", value, { min: 0, integer: true });
-    overrides.retryBackoff = value;
+    try {
+      assertNumber("retry-backoff", value, { min: 0, integer: true });
+      overrides.retryBackoff = value;
+    } catch (error) {
+      throw new CliError(
+        `Environment variable WIKI_RETRY_BACKOFF must be a non-negative integer: ${env.WIKI_RETRY_BACKOFF}`,
+        2,
+        "E_VALIDATION"
+      );
+    }
   }
   return overrides;
 }
@@ -269,7 +293,7 @@ async function resolveAuthHeader(args: CliGlobals, mode: "preview" | "request"):
     return { authorization: "Bearer <redacted>" };
   }
   const passphrase = await resolvePassphrase({
-    noInput: args.noInput,
+    nonInteractive: args.nonInteractive,
     confirm: false,
     ...(args.passphraseFile ? { passphraseFile: args.passphraseFile } : {}),
     ...(args.passphraseStdin ? { passphraseStdin: args.passphraseStdin } : {}),
@@ -300,12 +324,11 @@ function outputResult<T>(
   }
 }
 
-async function resolveQueryInput({ query, file }: { query?: string; file?: string }, noInput: boolean) {
-  const normalizedQuery = query === "query" ? undefined : query;
-  if (normalizedQuery) return normalizedQuery;
+async function resolveQueryInput({ query, file }: { query?: string; file?: string }, nonInteractive: boolean) {
+  if (query) return query;
   if (file) return readFile(file);
   if (!process.stdin.isTTY) return readStdin();
-  if (noInput) throw new Error("Query input required. Provide --query, --file, or stdin.");
+  if (nonInteractive) throw new Error("Query input required. Provide --query, --file, or stdin.");
   return promptText("SPARQL query: ");
 }
 
@@ -313,7 +336,7 @@ async function resolveTokenInput(
   tokenFile: string | undefined,
   tokenStdin: boolean,
   tokenEnv: string | undefined,
-  noInput: boolean
+  nonInteractive: boolean
 ): Promise<string> {
   if (tokenFile) return readFile(tokenFile).trim();
   if (tokenStdin) return (await readStdin()).trim();
@@ -321,7 +344,7 @@ async function resolveTokenInput(
   const envToken = process.env[envName];
   if (envToken && envToken.trim().length > 0) return envToken.trim();
   if (process.stdin.isTTY) {
-    if (noInput) {
+    if (nonInteractive) {
       throw new Error(
         "Token input required. Provide --token-file, --token-stdin, or --token-env (or set WIKI_TOKEN)."
       );
@@ -333,28 +356,47 @@ async function resolveTokenInput(
   );
 }
 
+function validatePassphrase(passphrase: string): void {
+  if (passphrase.length < 8) {
+    throw new Error("Passphrase must be at least 8 characters long.");
+  }
+}
+
 async function resolvePassphrase(options: {
-  noInput: boolean;
+  nonInteractive: boolean;
   confirm: boolean;
   passphraseFile?: string;
   passphraseStdin?: boolean;
   passphraseEnv?: string;
 }): Promise<string> {
-  if (options.passphraseFile) return readFile(options.passphraseFile).trim();
-  if (options.passphraseStdin) return (await readStdin()).trim();
+  if (options.passphraseFile) {
+    const passphrase = readFile(options.passphraseFile).trim();
+    validatePassphrase(passphrase);
+    return passphrase;
+  }
+  if (options.passphraseStdin) {
+    const passphrase = (await readStdin()).trim();
+    validatePassphrase(passphrase);
+    return passphrase;
+  }
   const envName = options.passphraseEnv ?? "WIKI_PASSPHRASE";
   const envValue = process.env[envName];
-  if (envValue && envValue.trim().length > 0) return envValue.trim();
+  if (envValue && envValue.trim().length > 0) {
+    const passphrase = envValue.trim();
+    validatePassphrase(passphrase);
+    return passphrase;
+  }
   if (!process.stdin.isTTY) {
     throw new Error(
       "Passphrase input required. Provide --passphrase-file, --passphrase-stdin, or --passphrase-env (or set WIKI_PASSPHRASE)."
     );
   }
-  if (options.noInput) {
-    throw new Error("Passphrase required. Run without --no-input.");
+  if (options.nonInteractive) {
+    throw new Error("Passphrase required. Run without --non-interactive.");
   }
 
   const passphrase = await promptHidden("Passphrase: ");
+  validatePassphrase(passphrase);
   if (options.confirm) {
     const confirmValue = await promptHidden("Confirm passphrase: ");
     if (passphrase !== confirmValue) {
@@ -441,7 +483,7 @@ cli
   .option("quiet", { type: "boolean", default: false, alias: "q" })
   .option("verbose", { type: "boolean", default: false, alias: "v" })
   .option("debug", { type: "boolean", default: false })
-  .option("no-input", { type: "boolean", default: false, describe: "Disable prompts" })
+.option("non-interactive", { type: "boolean", default: false, describe: "Disable prompts (non-interactive mode)" })
   .option("network", { type: "boolean", default: false, describe: "Allow network access" })
   .option("auth", { type: "boolean", default: false, describe: "Use stored token for Authorization" })
   .option("no-color", { type: "boolean", default: false, describe: "Disable color output" })
@@ -593,10 +635,10 @@ cli
               globals.tokenFile,
               Boolean(globals.tokenStdin),
               globals.tokenEnv,
-              globals.noInput
+              globals.nonInteractive
             );
             const passphrase = await resolvePassphrase({
-              noInput: globals.noInput,
+              nonInteractive: globals.nonInteractive,
               confirm: true,
               ...(globals.passphraseFile ? { passphraseFile: globals.passphraseFile } : {}),
               ...(globals.passphraseStdin ? { passphraseStdin: globals.passphraseStdin } : {}),
@@ -730,7 +772,7 @@ cli
       const queryInput: { query?: string; file?: string } = {};
       if (globals.query !== undefined) queryInput.query = globals.query;
       if (globals.file !== undefined) queryInput.file = globals.file;
-      const query = await resolveQueryInput(queryInput, globals.noInput);
+      const query = await resolveQueryInput(queryInput, globals.nonInteractive);
       if (preview) {
         const previewData: RequestPreview = {
           method: "POST",

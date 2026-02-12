@@ -60,9 +60,20 @@ export async function fetchWithRetry(
 }
 
 export async function readBody(response: Response): Promise<unknown> {
+  // Handle empty responses (204 No Content, empty body)
+  const contentLength = response.headers.get("content-length");
+  if (contentLength === "0" || response.status === 204) {
+    return null;
+  }
+
   const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
   if (contentType.includes("application/json") || contentType.includes("+json")) {
-    return response.json();
+    // Check if body is actually empty before parsing
+    const text = await response.text();
+    if (text.trim().length === 0) {
+      return null;
+    }
+    return JSON.parse(text);
   }
   return response.text();
 }
