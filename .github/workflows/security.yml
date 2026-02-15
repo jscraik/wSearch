@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Ensure GitHub CLI is installed
+        run: bash scripts/ensure-gh-cli.sh
       - uses: semgrep/semgrep-action@v1
         with:
           config: auto
