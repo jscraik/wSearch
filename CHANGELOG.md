@@ -14,6 +14,22 @@ Last updated: 2026-01-04
 - Review cadence: every release.
 - Required approvals: maintainers for public changes.
 
+
+
+## Unreleased
+(entries compiled from recent history)
+### Added
+
+- [2026-02-23] [853f2d3] chore: add per-repo release notes
+
+### Changed
+
+- [2026-02-23] [22d32e9] chore: sync changes
+- [2026-02-23] [e207b31] chore(deps): bump github/codeql-action from 3 to 4 (#23)
+- [2026-02-23] [d382ede] chore(deps): bump actions/checkout from 4 to 6 (#22)
+
+### Fixed
+
 ## [0.2.0] - 2026-01-04
 
 ### Changed (0.2.0)
