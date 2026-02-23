@@ -1,8 +1,11 @@
 {
   "name": "@brainwav/wsearch-cli",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "brAInwav wSearch CLI - Query Wikidata via REST, SPARQL, and Action API with safe, script-friendly output.",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "wsearch": "dist/cli.js"
   },
@@ -30,13 +33,15 @@
     "lint:docs:vale": "vale --config .vale.ini README.md docs references",
     "lint:docs:readability": "python3 scripts/check_readability.py README.md docs references",
     "lint:docs:brand": "python3 scripts/check_brand_guidelines.py --repo . --docs docs/ARCHITECTURE.md --docs docs/BRAND.md --docs docs/CONFIG.md --docs docs/DEVELOPMENT.md --docs docs/FAQ.md --docs docs/GETTING_STARTED.md --docs docs/README.md --docs docs/SECURITY.md --docs docs/TROUBLESHOOTING.md --docs docs/USAGE.md --docs references/BRAND_GUIDELINES.md --docs references/CHECKLIST.md --docs references/CODE_DOC_CHECKLIST.md",
-    "prepublishOnly": "npm run lint:types && npm run test && npm run build"
+    "prepublishOnly": "npm run lint:types && npm run test && npm run build",
+    "preversion": "git branch --show-current | grep -q '^main$' || (echo 'Releases must occur on main' && exit 1) && npm run prepublishOnly",
+    "postversion": "git push && git push --tags"
   },
   "dependencies": {
     "yargs": "^17.7.2"
   },
   "devDependencies": {
-    "@types/node": "^20.11.30",
+    "@types/node": "^25.2.2",
     "@types/yargs": "^17.0.32",
     "markdownlint-cli2": "^0.20.0",
     "tsup": "^8.0.2",
