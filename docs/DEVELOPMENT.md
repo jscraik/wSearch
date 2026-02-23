@@ -91,21 +91,18 @@ npm run dev -- --help
 - Verify: help output is printed.
 
 ### Cut a release
-- What you get: a tagged release ready for npm publishing.
+- What you get: an automated workflow to test, build, tag, and publish to the public npm registry.
 - Steps:
 ```sh
-npm version patch --no-git-tag-version
-# update CHANGELOG.md
-# git commit -am "Release vX.Y.Z"
-# git tag vX.Y.Z
-# git push && git push --tags
+npm version patch
 ```
-- Verify: tag exists in the remote repository.
+- Verify: tag exists in the remote repository and the GitHub Action
+  automatically publishes the package via `npm publish --access public`.
 
 ## Risks and assumptions
 - Security scans depend on local installations of semgrep and gitleaks.
-- Releasing requires appropriate git permissions and npm publishing rights.
-- `npm version` changes package metadata. Review the diff before tagging.
+- Releasing requires pushing tags directly to GitHub (`npm version` handles this automatically).
+- The package is now fully public and uses GitHub Actions continuous deployment.
 
 ## Troubleshooting
 ### Symptom: npm audit fails on dev dependencies
