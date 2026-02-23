@@ -1,6 +1,6 @@
 {
   "name": "@brainwav/wsearch-cli",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "brAInwav wSearch CLI - Query Wikidata via REST, SPARQL, and Action API with safe, script-friendly output.",
   "type": "module",
   "publishConfig": {
