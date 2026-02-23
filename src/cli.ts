@@ -263,7 +263,7 @@ async function resolveAuthHeader(args: CliGlobals, mode: "preview" | "request"):
   if (!args.auth) return {};
   const stored = loadCredentials();
   if (!stored) {
-    throw new CliError("No stored token found. Run `wiki auth login` first.", 3, "E_AUTH");
+    throw new CliError("No stored token found. Run `wsearch auth login` first.", 3, "E_AUTH");
   }
   if (mode === "preview") {
     return { authorization: "Bearer <redacted>" };
@@ -301,7 +301,8 @@ function outputResult<T>(
 }
 
 async function resolveQueryInput({ query, file }: { query?: string; file?: string }, noInput: boolean) {
-  if (query) return query;
+  const normalizedQuery = query === "query" ? undefined : query;
+  if (normalizedQuery) return normalizedQuery;
   if (file) return readFile(file);
   if (!process.stdin.isTTY) return readStdin();
   if (noInput) throw new Error("Query input required. Provide --query, --file, or stdin.");
@@ -414,12 +415,12 @@ function parseOutputArgsFromArgv(argv: string[]): { json: boolean; plain: boolea
 }
 
 cli
-  .scriptName("wiki")
-  .usage("wiki [global flags] <subcommand> [args]")
-  .example("wiki --network --user-agent \"MyApp/1.0 (https://example.org/contact)\" entity get Q42", "")
-  .example("wiki --network sparql query --file ./query.rq --format json", "")
-  .example("wiki --network action search --query \"New York\" --language en --limit 5", "")
-  .example("wiki auth login --token-stdin < token.txt", "")
+  .scriptName("wsearch")
+  .usage("wsearch [global flags] <subcommand> [args]")
+  .example("wsearch --network --user-agent \"MyApp/1.0 (https://example.org/contact)\" entity get Q42", "")
+  .example("wsearch --network sparql query --file ./query.rq --format json", "")
+  .example("wsearch --network action search --query \"New York\" --language en --limit 5", "")
+  .example("wsearch auth login --token-stdin < token.txt", "")
   .config(mergedDefaults)
   .middleware((args: Arguments) => {
     lastKnownArgs = args as unknown as CliGlobals;
