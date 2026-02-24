@@ -1003,6 +1003,12 @@ cli
   .config(mergedDefaults)
   .middleware((args: Arguments) => {
     lastKnownArgs = args as unknown as CliGlobals;
+    if (typeof args.output === "string" && args.output.trim().length === 0) {
+      throw new CliError("--output requires a non-empty file path.", 2, "E_USAGE");
+    }
+    if (typeof args.requestId === "string" && args.requestId.trim().length === 0) {
+      throw new CliError("--request-id requires a non-empty value.", 2, "E_USAGE");
+    }
     if (args.help || isHelpLike) return;
     if (args.json && args.plain) {
       throw new CliError("--json and --plain cannot be used together", 2, "E_USAGE");

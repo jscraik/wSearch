@@ -147,6 +147,26 @@ describe("cli error handling", () => {
     expect(payload.errors?.[0]?.code).toBe("E_IO");
   });
 
+  it("returns E_USAGE when --output is explicitly empty", () => {
+    const result = runCli(["--json", "--output", "", "config", "path"]);
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(2);
+    const payload = JSON.parse(result.stdout.trim());
+    expect(payload.schema).toBe("wiki.error.v1");
+    expect(payload.errors?.[0]?.code).toBe("E_USAGE");
+    expect(payload.summary).toContain("--output requires a non-empty file path.");
+  });
+
+  it("returns E_USAGE when --request-id is explicitly empty", () => {
+    const result = runCli(["--json", "--request-id", "", "config", "path"]);
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(2);
+    const payload = JSON.parse(result.stdout.trim());
+    expect(payload.schema).toBe("wiki.error.v1");
+    expect(payload.errors?.[0]?.code).toBe("E_USAGE");
+    expect(payload.summary).toContain("--request-id requires a non-empty value.");
+  });
+
   it("returns E_IO when config cannot be persisted due to invalid config home path", () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "wiki-cli-"));
     const fakeConfigHome = path.join(tmpDir, "not-a-dir");
