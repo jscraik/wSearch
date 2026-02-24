@@ -1,4 +1,6 @@
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import type { JsonEnvelope, LogLevel, OutputMode } from "./types.js";
 
 export type Logger = {
@@ -50,9 +52,10 @@ export function envelope<T>(
   errors: Array<{ message: string; code?: string }> = [],
   requestId?: string,
 ): JsonEnvelope<T> {
+  const version = resolveCliVersion();
   const meta = {
     tool: "wsearch",
-    version: process.env.npm_package_version ?? "0.0.0",
+    version,
     timestamp: new Date().toISOString(),
     ...(requestId !== undefined ? { request_id: requestId } : {}),
   };
@@ -71,6 +74,10 @@ export function writeOutput(content: string, output?: string): void {
     process.stdout.write(content);
     return;
   }
+  const parent = path.dirname(output);
+  if (parent && parent !== ".") {
+    fs.mkdirSync(parent, { recursive: true });
+  }
   // Ensure trailing newline for files
   const payload = content.endsWith("\n") ? content : `${content}\n`;
   fs.writeFileSync(output, payload, { encoding: "utf8" });
@@ -81,4 +88,34 @@ export function formatPlain(data: unknown): string {
     return data.endsWith("\n") ? data : `${data}\n`;
   }
   return `${JSON.stringify(data, null, 2)}\n`;
+}
+
+let cachedVersion: string | null = null;
+
+function resolveCliVersion(): string {
+  if (cachedVersion) {
+    return cachedVersion;
+  }
+
+  const envVersion = process.env.npm_package_version?.trim();
+  if (envVersion) {
+    cachedVersion = envVersion;
+    return cachedVersion;
+  }
+
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const packagePath = path.resolve(here, "..", "package.json");
+    const raw = fs.readFileSync(packagePath, "utf8");
+    const parsed = JSON.parse(raw) as { version?: string };
+    if (parsed.version && parsed.version.trim().length > 0) {
+      cachedVersion = parsed.version.trim();
+      return cachedVersion;
+    }
+  } catch (error) {
+    // no-op: fall back to default version
+  }
+
+  cachedVersion = "0.0.0";
+  return cachedVersion;
 }

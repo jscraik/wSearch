@@ -15,6 +15,12 @@ export function entityPath(id: string): string {
   return `/entities/${type}/${id.toUpperCase()}`;
 }
 
+export function apiPathUrl(apiUrl: string, apiPath: string): string {
+  const normalizedPath = apiPath.replace(/^\/+/, "");
+  const base = new URL(apiUrl.endsWith("/") ? apiUrl : `${apiUrl}/`);
+  return new URL(normalizedPath, base).toString();
+}
+
 export async function getEntity(
   apiUrl: string,
   id: string,
@@ -22,7 +28,7 @@ export async function getEntity(
   logger: Logger,
   opts: { timeout: number; retries: number; retryBackoff: number }
 ): Promise<unknown> {
-  const url = new URL(entityPath(id), apiUrl).toString();
+  const url = apiPathUrl(apiUrl, entityPath(id));
   const response = await fetchWithRetry(url, { method: "GET", headers }, { ...opts, logger });
   const body = await readBody(response);
   if (!response.ok) {
@@ -38,7 +44,7 @@ export async function getStatements(
   logger: Logger,
   opts: { timeout: number; retries: number; retryBackoff: number }
 ): Promise<unknown> {
-  const url = new URL(`${entityPath(id)}/statements`, apiUrl).toString();
+  const url = apiPathUrl(apiUrl, `${entityPath(id)}/statements`);
   const response = await fetchWithRetry(url, { method: "GET", headers }, { ...opts, logger });
   const body = await readBody(response);
   if (!response.ok) {
@@ -118,7 +124,7 @@ export async function rawRequest(
   if (!path.startsWith("/")) {
     throw new Error("Path must start with '/'");
   }
-  const url = new URL(path, apiUrl).toString();
+  const url = apiPathUrl(apiUrl, path);
   const initHeaders = {
     ...headers,
     ...(body !== undefined ? { "content-type": "application/json" } : {})

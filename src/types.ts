@@ -23,7 +23,7 @@ export type CliGlobals = {
   quiet: boolean;
   verbose: boolean;
   debug: boolean;
-  noInput: boolean;
+  input: boolean;
   network: boolean;
   auth: boolean;
   requestId?: string;

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="11" failures="0" errors="0" time="1.327198959">
+    <testsuite name="tests/cli.test.ts" timestamp="2026-02-24T14:12:55.962Z" hostname="Mac-Studio.local" tests="4" failures="0" errors="0" skipped="0" time="1.257198042">
+        <testcase classname="tests/cli.test.ts" name="cli error handling &gt; returns JSON error envelope with E_POLICY when network is disabled" time="0.225769584">
+        </testcase>
+        <testcase classname="tests/cli.test.ts" name="cli error handling &gt; returns JSON error envelope with E_USAGE for conflicting output flags" time="0.185031875">
+        </testcase>
+        <testcase classname="tests/cli.test.ts" name="cli request preview &gt; prints a request preview without network access" time="0.219352833">
+        </testcase>
+        <testcase classname="tests/cli.test.ts" name="cli config &gt; sets, gets, and resolves config values" time="0.625986125">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/crypto.test.ts" timestamp="2026-02-24T14:12:55.962Z" hostname="Mac-Studio.local" tests="1" failures="0" errors="0" skipped="0" time="0.0485565">
+        <testcase classname="tests/crypto.test.ts" name="crypto &gt; round-trips encryption" time="0.047985834">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/http.test.ts" timestamp="2026-02-24T14:12:55.962Z" hostname="Mac-Studio.local" tests="1" failures="0" errors="0" skipped="0" time="0.01994175">
+        <testcase classname="tests/http.test.ts" name="readBody &gt; parses +json content types" time="0.0194255">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/wikidata.test.ts" timestamp="2026-02-24T14:12:55.963Z" hostname="Mac-Studio.local" tests="5" failures="0" errors="0" skipped="0" time="0.001502667">
+        <testcase classname="tests/wikidata.test.ts" name="entityTypeForId &gt; maps Q ids to items" time="0.000456291">
+        </testcase>
+        <testcase classname="tests/wikidata.test.ts" name="entityTypeForId &gt; maps P ids to properties" time="0.0000795">
+        </testcase>
+        <testcase classname="tests/wikidata.test.ts" name="entityTypeForId &gt; maps L ids to lexemes" time="0.000067917">
+        </testcase>
+        <testcase classname="tests/wikidata.test.ts" name="entityTypeForId &gt; rejects unknown ids" time="0.000332125">
+        </testcase>
+        <testcase classname="tests/wikidata.test.ts" name="entityPath &gt; builds entity path" time="0.000057291">
+        </testcase>
+    </testsuite>
+</testsuites>

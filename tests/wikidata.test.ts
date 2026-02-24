@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { entityTypeForId, entityPath } from "../src/wikidata.js";
+import { apiPathUrl, entityTypeForId, entityPath } from "../src/wikidata.js";
 
 describe("entityTypeForId", () => {
   it("maps Q ids to items", () => {
@@ -22,5 +22,16 @@ describe("entityTypeForId", () => {
 describe("entityPath", () => {
   it("builds entity path", () => {
     expect(entityPath("q42")).toBe("/entities/items/Q42");
+  });
+});
+
+describe("apiPathUrl", () => {
+  it("resolves API paths under the configured API base path", () => {
+    expect(
+      apiPathUrl(
+        "https://www.wikidata.org/w/rest.php/wikibase/v1",
+        "/entities/items/Q42",
+      ),
+    ).toBe("https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/Q42");
   });
 });

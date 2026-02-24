@@ -1,0 +1,8 @@
+{
+  "name": "unit",
+  "command": "npx vitest run --reporter=default --reporter=junit --reporter=json --outputFile.junit=artifacts/test/junit-unit.xml --outputFile.json=artifacts/test/unit-results.json",
+  "started_at": "2026-02-24T14:12:54Z",
+  "ended_at": "2026-02-24T14:12:55Z",
+  "exit_code": 0,
+  "duration_ms": 1000
+}

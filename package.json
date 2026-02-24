@@ -39,7 +39,11 @@
     "lint:docs:brand": "python3 scripts/check_brand_guidelines.py --repo . --docs docs/ARCHITECTURE.md --docs docs/BRAND.md --docs docs/CONFIG.md --docs docs/DEVELOPMENT.md --docs docs/FAQ.md --docs docs/GETTING_STARTED.md --docs docs/README.md --docs docs/SECURITY.md --docs docs/TROUBLESHOOTING.md --docs docs/USAGE.md --docs references/BRAND_GUIDELINES.md --docs references/CHECKLIST.md --docs references/CODE_DOC_CHECKLIST.md",
     "prepublishOnly": "npm run lint:types && npm run test && npm run build",
     "preversion": "git branch --show-current | grep -q '^main$' || (echo 'Releases must occur on main' && exit 1) && npm run prepublishOnly",
-    "postversion": "git push && git push --tags"
+    "postversion": "git push && git push --tags",
+    "test:artifacts": "bash scripts/test-with-artifacts.sh all",
+    "test:artifacts:unit": "bash scripts/test-with-artifacts.sh unit",
+    "test:artifacts:integration": "bash scripts/test-with-artifacts.sh integration",
+    "test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e"
   },
   "dependencies": {
     "yargs": "^18.0.0"

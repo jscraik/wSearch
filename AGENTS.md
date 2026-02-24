@@ -40,3 +40,18 @@ This repository contains the TypeScript CLI for safe, script-friendly Wikidata q
 - [Security and governance](/Users/jamiecraik/dev/wsearch/docs/agents/04-security-and-governance.md)
 - [AI artifact governance](/Users/jamiecraik/dev/wsearch/docs/agents/05-ai-artifact-governance.md)
 - [Contradictions and cleanup](/Users/jamiecraik/dev/wsearch/docs/agents/06-contradictions-and-cleanup.md)
+
+## Flaky Test Artifact Capture
+- Run `bash scripts/test-with-artifacts.sh all` (or `pnpm run test:artifacts` / `npm run test:artifacts` / `bun run test:artifacts`) to emit machine-readable flaky evidence under `artifacts/test`.
+- Optional targeted modes:
+  - `bash scripts/test-with-artifacts.sh unit`
+  - `bash scripts/test-with-artifacts.sh integration`
+  - `bash scripts/test-with-artifacts.sh e2e`
+- Commit/retain stable artifact paths for local automation ingestion:
+  - `artifacts/test/summary-*.json`
+  - `artifacts/test/test-output-*.log`
+  - `artifacts/test/junit-*.xml` (when supported by test runner)
+  - `artifacts/test/*-results.json` (when supported by test runner)
+  - `artifacts/test/artifact-manifest.json`
+- Keep artifact filenames stable (no timestamps in filenames) so recurring flake scans can compare runs.
+

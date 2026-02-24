@@ -3,10 +3,44 @@ import readline from "readline";
 
 export async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
+  const drainBuffered = () => {
+    let chunk: string | Buffer | null;
+    while ((chunk = process.stdin.read()) !== null) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+  };
+
+  drainBuffered();
+  if (process.stdin.readableEnded || process.stdin.destroyed) {
+    return Buffer.concat(chunks).toString("utf8");
+  }
+
   return new Promise((resolve, reject) => {
-    process.stdin.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
-    process.stdin.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-    process.stdin.on("error", (err) => reject(err));
+    const onData = (chunk: string | Buffer) => {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    };
+    const onEnd = () => {
+      cleanup();
+      resolve(Buffer.concat(chunks).toString("utf8"));
+    };
+    const onError = (err: Error) => {
+      cleanup();
+      reject(err);
+    };
+    const cleanup = () => {
+      process.stdin.removeListener("data", onData);
+      process.stdin.removeListener("end", onEnd);
+      process.stdin.removeListener("error", onError);
+    };
+
+    process.stdin.on("data", onData);
+    process.stdin.on("end", onEnd);
+    process.stdin.on("error", onError);
+
+    if (process.stdin.readableEnded || process.stdin.destroyed) {
+      cleanup();
+      resolve(Buffer.concat(chunks).toString("utf8"));
+    }
   });
 }
 
