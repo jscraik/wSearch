@@ -1,8 +1,13 @@
 # Release Notes
 
-**Repository:** `/Users/jamiecraik/dev/wsearch`
-**Since tag:** `v0.1.9`
-**Generated:** 2026-02-23 18:04 GMT
+**Repository:** `/Users/jamiecraik/dev/wsearch`  
+**Since tag:** `v0.1.9`  
+**Generated:** 2026-02-24 18:13 UTC
+
+## Table of Contents
+- [Breaking Changes](#breaking-changes)
+- [Chores](#chores)
+- [Source](#source)
 
 ## Breaking Changes
 
@@ -10,7 +15,8 @@
 
 ## Chores
 
-- `22d32e9` chore: sync changes
+- `d382ede` deps: bump `actions/checkout` 4->6.
+- `e207b31` deps: bump `github/codeql-action` 3->4.
 
 ## Source
 
