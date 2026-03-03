@@ -1,0 +1,10 @@
+{
+  "harnessVersion": "0.6.0",
+  "files": [
+    {
+      "path": ".codex/environments/environment.toml",
+      "action": "modified",
+      "backupHash": "cd49adffccd28c2b"
+    }
+  ]
+}

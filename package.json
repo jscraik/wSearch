@@ -43,19 +43,27 @@
     "test:artifacts": "bash scripts/test-with-artifacts.sh all",
     "test:artifacts:unit": "bash scripts/test-with-artifacts.sh unit",
     "test:artifacts:integration": "bash scripts/test-with-artifacts.sh integration",
-    "test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e"
+    "test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e",
+    "postinstall": "simple-git-hooks"
   },
   "dependencies": {
     "yargs": "^18.0.0"
   },
   "devDependencies": {
+    "@brainwav/coding-harness": "^0.6.0",
     "@types/node": "^25.2.2",
     "@types/yargs": "^17.0.32",
     "markdownlint-cli2": "^0.21.0",
     "tsup": "^8.0.2",
     "tsx": "^4.7.1",
     "typescript": "^5.4.5",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.16",
+    "simple-git-hooks": "^2.13.1"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "simple-git-hooks": {
+    "pre-commit": "npm run lint:types",
+    "commit-msg": "node scripts/validate-commit-msg.js $1",
+    "pre-push": "npm test"
+  }
 }

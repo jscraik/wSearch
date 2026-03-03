@@ -1,0 +1,20 @@
+title = "Project gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for test fixtures and examples."
+paths = [
+  "(^|/)docs?/",
+  "(^|/)examples?/",
+  "(^|/)test/",
+  "(^|/)tests?/",
+  "(^|/)spec/",
+  "(^|/)__tests__/",
+  "(^|/)test-data/",
+  "(^|/)[^.]+\\.(test|spec)\\.[^.]+$",
+]
+regexes = [
+  "\\[REDACTED\\]",
+]
