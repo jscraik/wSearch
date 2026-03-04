@@ -145,7 +145,7 @@ wsearch --print-request --user-agent "MyApp/1.0 (https://example.org/contact)" e
 - `--retries <n>`: retries for 429/5xx (default 2).
 - `--retry-backoff <ms>`: base backoff in ms (default 400).
 - `--quiet` / `--verbose` / `--debug`: logging levels.
-- `--no-input`: disable prompts.
+- `--non-interactive`: disable prompts (non-interactive mode).
 - `--no-color`: disable color.
 
 ## Auth login options

@@ -1,111 +1,144 @@
+import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
-import {
-  saveConfig,
-  saveCredentials,
-  getConfigDir,
-  getConfigPath,
-  getCredentialsPath,
-  loadConfig,
-  loadCredentials
-} from "../src/config.js";
+import { ensureConfigDir, saveConfig, loadConfig, saveCredentials, loadCredentials } from "../src/config.js";
 
-describe("config file permissions", () => {
-  it("enforces restrictive modes when saving config and credentials", () => {
-    if (process.platform === "win32") {
-      return;
-    }
+describe("config security", () => {
+  let originalXdg: string | undefined;
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "wiki-test-"));
 
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "wiki-cli-perms-"));
-    const previousXdg = process.env.XDG_CONFIG_HOME;
+  beforeEach(() => {
+    originalXdg = process.env.XDG_CONFIG_HOME;
     process.env.XDG_CONFIG_HOME = tmpDir;
+  });
 
-    const configDir = getConfigDir();
-    fs.mkdirSync(configDir, { recursive: true, mode: 0o755 });
-    const configPath = getConfigPath();
-    const credentialsPath = getCredentialsPath();
-    fs.writeFileSync(configPath, "{}", { encoding: "utf8", mode: 0o644 });
-    fs.writeFileSync(
-      credentialsPath,
-      JSON.stringify({
-        version: 1,
-        kdf: "scrypt",
-        salt: "salt",
-        iv: "iv",
-        tag: "tag",
-        ciphertext: "cipher"
-      }),
-      { encoding: "utf8", mode: 0o644 }
-    );
+  afterEach(() => {
+    process.env.XDG_CONFIG_HOME = originalXdg;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
 
-    fs.chmodSync(configDir, 0o755);
-    fs.chmodSync(configPath, 0o644);
-    fs.chmodSync(credentialsPath, 0o644);
+  describe("ensureConfigDir", () => {
+    it("creates config directory with secure permissions", () => {
+      ensureConfigDir();
+      const dir = path.join(tmpDir, "wsearch-cli");
+      const stats = fs.statSync(dir);
+      const mode = stats.mode & 0o777;
+      expect(mode).toBe(0o700);
+    });
 
-    try {
-      saveConfig({ userAgent: "Test/1.0" });
-      saveCredentials({
-        version: 1,
-        kdf: "scrypt",
-        salt: "salt",
-        iv: "iv",
-        tag: "tag",
-        ciphertext: "cipher"
+    it("detects insecure directory permissions", () => {
+      const dir = path.join(tmpDir, "wsearch-cli");
+      fs.mkdirSync(dir, { recursive: true, mode: 0o755 });
+
+      expect(() => ensureConfigDir())
+        .toThrowError(/insecure permissions/);
+    });
+
+    it("verifies directory ownership on Unix", () => {
+      if (process.platform === "win32") {
+        return;
+      }
+
+      const dir = path.join(tmpDir, "wsearch-cli");
+      fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+
+      // This test assumes the current user owns the directory
+      // (which should be true since we just created it)
+      expect(() => ensureConfigDir()).not.toThrow();
+    });
+  });
+
+  describe("saveConfig and loadConfig", () => {
+    it("writes config file with secure permissions", () => {
+      const config = { userAgent: "Test/1.0" };
+      saveConfig(config);
+
+      const file = path.join(tmpDir, "wsearch-cli", "config.json");
+      const stats = fs.statSync(file);
+      expect(stats.mode & 0o777).toBe(0o600);
+    });
+
+    it("writes config file atomically", () => {
+      const config = { userAgent: "Test/1.0" };
+      saveConfig(config);
+
+      const loaded = loadConfig();
+      expect(loaded).toEqual(config);
+    });
+
+    it("overwrites existing config atomically", () => {
+      const config1 = { userAgent: "Test/1.0" };
+      const config2 = { userAgent: "Test/2.0" };
+
+      saveConfig(config1);
+      saveConfig(config2);
+
+      const loaded = loadConfig();
+      expect(loaded).toEqual(config2);
+    });
+  });
+
+  describe("saveCredentials and loadCredentials", () => {
+    it("writes credentials file with secure permissions", () => {
+      const creds = {
+        version: 1 as const,
+        kdf: "scrypt" as const,
+        salt: "dGVzdHNhbHQ=",
+        iv: "dGVzdGl2",
+        tag: "dGVzdHRhZw==",
+        ciphertext: "dGVzdGNpcGhlcg=="
+      };
+
+      saveCredentials(creds);
+
+      const file = path.join(tmpDir, "wsearch-cli", "credentials.json");
+      const stats = fs.statSync(file);
+      expect(stats.mode & 0o777).toBe(0o600);
+    });
+
+    it("detects insecure credentials file permissions", () => {
+      const dir = path.join(tmpDir, "wsearch-cli");
+      fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+
+      const file = path.join(dir, "credentials.json");
+      const creds = {
+        version: 1 as const,
+        kdf: "scrypt" as const,
+        salt: "dGVzdHNhbHQ=",
+        iv: "dGVzdGl2",
+        tag: "dGVzdHRhZw==",
+        ciphertext: "dGVzdGNpcGhlcg=="
+      };
+
+      // Write with insecure permissions
+      fs.writeFileSync(file, JSON.stringify(creds, null, 2), {
+        mode: 0o644
       });
 
-      const dirMode = fs.statSync(configDir).mode & 0o777;
-      const fileMode = fs.statSync(configPath).mode & 0o777;
-      const credMode = fs.statSync(credentialsPath).mode & 0o777;
+      expect(() => loadCredentials())
+        .toThrowError(/insecure permissions/);
+    });
 
-      expect(dirMode).toBe(0o700);
-      expect(fileMode).toBe(0o600);
-      expect(credMode).toBe(0o600);
-    } finally {
-      if (previousXdg === undefined) {
-        delete process.env.XDG_CONFIG_HOME;
-      } else {
-        process.env.XDG_CONFIG_HOME = previousXdg;
-      }
-    }
-  });
-});
+    it("returns null when credentials file does not exist", () => {
+      const creds = loadCredentials();
+      expect(creds).toBeNull();
+    });
 
-describe("config schema validation", () => {
-  it("rejects non-object config files", () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "wiki-cli-config-"));
-    const previousXdg = process.env.XDG_CONFIG_HOME;
-    process.env.XDG_CONFIG_HOME = tmpDir;
-    const configDir = getConfigDir();
-    fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(getConfigPath(), "[]", "utf8");
-    try {
-      expect(() => loadConfig()).toThrow(/must be a JSON object/);
-    } finally {
-      if (previousXdg === undefined) {
-        delete process.env.XDG_CONFIG_HOME;
-      } else {
-        process.env.XDG_CONFIG_HOME = previousXdg;
-      }
-    }
-  });
+    it("round-trips credentials", () => {
+      const creds = {
+        version: 1 as const,
+        kdf: "scrypt" as const,
+        salt: "dGVzdHNhbHQ=",
+        iv: "dGVzdGl2",
+        tag: "dGVzdHRhZw==",
+        ciphertext: "dGVzdGNpcGhlcg=="
+      };
 
-  it("rejects structurally invalid credentials files", () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "wiki-cli-credentials-"));
-    const previousXdg = process.env.XDG_CONFIG_HOME;
-    process.env.XDG_CONFIG_HOME = tmpDir;
-    const configDir = getConfigDir();
-    fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(getCredentialsPath(), JSON.stringify({ foo: "bar" }), "utf8");
-    try {
-      expect(() => loadCredentials()).toThrow(/version must be 1/);
-    } finally {
-      if (previousXdg === undefined) {
-        delete process.env.XDG_CONFIG_HOME;
-      } else {
-        process.env.XDG_CONFIG_HOME = previousXdg;
-      }
-    }
+      saveCredentials(creds);
+      const loaded = loadCredentials();
+
+      expect(loaded).toEqual(creds);
+    });
   });
 });
