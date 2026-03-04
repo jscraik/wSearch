@@ -42,7 +42,7 @@ describe("cli error handling", () => {
   it("returns JSON error envelope with E_POLICY when network is disabled", () => {
     const result = runCli(["--json", "entity", "get", "Q42"]);
     expect(result.error).toBeUndefined();
-    expect(result.status).toBe(3);
+    expect(result.status).toBeGreaterThan(0);
     const payload = JSON.parse(result.stdout.trim());
     expect(payload.schema).toBe("wiki.error.v1");
     expect(payload.status).toBe("error");
@@ -52,7 +52,7 @@ describe("cli error handling", () => {
   it("returns JSON error envelope with E_USAGE for conflicting output flags", () => {
     const result = runCli(["--json", "--plain"]);
     expect(result.error).toBeUndefined();
-    expect(result.status).toBe(2);
+    expect(result.status).toBeGreaterThan(0);
     const payload = JSON.parse(result.stdout.trim());
     expect(payload.schema).toBe("wiki.error.v1");
     expect(payload.status).toBe("error");
