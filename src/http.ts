@@ -83,12 +83,10 @@ export async function readBody(response: Response): Promise<unknown> {
   const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
   const bodyText = await response.text();
   if (contentType.includes("application/json") || contentType.includes("+json")) {
-    // Check if body is actually empty before parsing
-    const text = await response.text();
-    if (text.trim().length === 0) {
+    if (bodyText.trim().length === 0) {
       return null;
     }
-    return JSON.parse(text);
+    return JSON.parse(bodyText);
   }
   return bodyText;
 }

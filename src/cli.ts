@@ -205,10 +205,10 @@ function loadEnvOverrides(): Partial<CliGlobals> {
   const overrides: Partial<CliGlobals> = {};
   const env = process.env;
   if (env.WIKI_USER_AGENT) overrides.userAgent = env.WIKI_USER_AGENT;
-  if (env.WIKI_API_URL) overrides.apiUrl = env.WIKI_API_URL;
-  if (env.WIKI_ACTION_URL) overrides.actionUrl = env.WIKI_ACTION_URL;
-  if (env.WIKI_SPARQL_URL) overrides.sparqlUrl = env.WIKI_SPARQL_URL;
-  if (env.WIKI_TIMEOUT) {
+  if (env.WIKI_API_URL && env.WIKI_API_URL.trim().length > 0) overrides.apiUrl = env.WIKI_API_URL;
+  if (env.WIKI_ACTION_URL && env.WIKI_ACTION_URL.trim().length > 0) overrides.actionUrl = env.WIKI_ACTION_URL;
+  if (env.WIKI_SPARQL_URL && env.WIKI_SPARQL_URL.trim().length > 0) overrides.sparqlUrl = env.WIKI_SPARQL_URL;
+  if (typeof env.WIKI_TIMEOUT !== "undefined" && env.WIKI_TIMEOUT.trim().length > 0) {
     const value = Number(env.WIKI_TIMEOUT);
     try {
       assertNumber("timeout", value, { min: 1, integer: true });
@@ -221,7 +221,7 @@ function loadEnvOverrides(): Partial<CliGlobals> {
       );
     }
   }
-  if (env.WIKI_RETRIES) {
+  if (typeof env.WIKI_RETRIES !== "undefined" && env.WIKI_RETRIES.trim().length > 0) {
     const value = Number(env.WIKI_RETRIES);
     try {
       assertNumber("retries", value, { min: 0, integer: true });
@@ -234,7 +234,7 @@ function loadEnvOverrides(): Partial<CliGlobals> {
       );
     }
   }
-  if (env.WIKI_RETRY_BACKOFF) {
+  if (typeof env.WIKI_RETRY_BACKOFF !== "undefined" && env.WIKI_RETRY_BACKOFF.trim().length > 0) {
     const value = Number(env.WIKI_RETRY_BACKOFF);
     try {
       assertNumber("retry-backoff", value, { min: 0, integer: true });
@@ -469,9 +469,9 @@ async function resolveAuthHeader(args: CliGlobals, mode: "preview" | "request"):
   const passphrase = await resolvePassphrase({
     nonInteractive: args.nonInteractive,
     confirm: false,
-    ...(args.passphraseFile ? { passphraseFile: args.passphraseFile } : {}),
+    ...(typeof args.passphraseFile !== "undefined" ? { passphraseFile: args.passphraseFile } : {}),
     ...(args.passphraseStdin ? { passphraseStdin: args.passphraseStdin } : {}),
-    ...(args.passphraseEnv ? { passphraseEnv: args.passphraseEnv } : {})
+    ...(typeof args.passphraseEnv !== "undefined" ? { passphraseEnv: args.passphraseEnv } : {})
   });
   let token: string;
   try {
@@ -499,10 +499,32 @@ function outputResult<T>(
 }
 
 async function resolveQueryInput({ query, file }: { query?: string; file?: string }, nonInteractive: boolean) {
-  if (query) return query;
-  if (file) return readFile(file);
-  if (!process.stdin.isTTY) return readStdin();
-  if (nonInteractive) throw new Error("Query input required. Provide --query, --file, or stdin.");
+  if (typeof query !== "undefined" && typeof file !== "undefined") {
+    throw new CliError("Provide only one query source: --query or --file.", 2, "E_USAGE");
+  }
+  if (typeof query !== "undefined") {
+    const normalizedQuery = query.trim();
+    if (normalizedQuery.length === 0) {
+      throw new CliError("Query input required. Provided --query was empty.", 2, "E_USAGE");
+    }
+    return normalizedQuery;
+  }
+  if (typeof file !== "undefined") {
+    if (file.trim().length === 0) {
+      throw new CliError("--file requires a non-empty file path.", 2, "E_USAGE");
+    }
+    return readFileOrThrow(file, "query");
+  }
+  if (!process.stdin.isTTY) {
+    const stdinQuery = (await readStdin()).trim();
+    if (stdinQuery.length === 0) {
+      throw new CliError("Query input required. Provide --query, --file, or stdin.", 2, "E_USAGE");
+    }
+    return stdinQuery;
+  }
+  if (nonInteractive) {
+    throw new CliError("Query input required. Provide --query, --file, or stdin.", 2, "E_USAGE");
+  }
   return promptText("SPARQL query: ");
 }
 
@@ -588,22 +610,56 @@ async function resolvePassphrase(options: {
   passphraseStdin?: boolean;
   passphraseEnv?: string;
 }): Promise<string> {
-  if (options.passphraseFile) {
+  const configuredSources = [
+    typeof options.passphraseFile !== "undefined",
+    Boolean(options.passphraseStdin),
+    typeof options.passphraseEnv !== "undefined"
+  ].filter(Boolean).length;
+  if (configuredSources > 1) {
+    throw new CliError(
+      "Provide only one passphrase source: --passphrase-file, --passphrase-stdin, or --passphrase-env.",
+      2,
+      "E_USAGE"
+    );
+  }
+  if (typeof options.passphraseFile !== "undefined") {
+    if (options.passphraseFile.trim().length === 0) {
+      throw new CliError("--passphrase-file requires a non-empty file path.", 2, "E_USAGE");
+    }
     const passphrase = readFile(options.passphraseFile).trim();
     validatePassphrase(passphrase);
     return passphrase;
   }
   if (options.passphraseStdin) {
-    const passphrase = (await readStdin()).trim();
+    const stdinPassphrase = (await readStdin()).trim();
+    if (stdinPassphrase.length === 0) {
+      throw new CliError(
+        "Passphrase input required. Provide --passphrase-file, --passphrase-stdin, or --passphrase-env (or set WIKI_PASSPHRASE).",
+        2,
+        "E_USAGE"
+      );
+    }
+    const passphrase = stdinPassphrase;
     validatePassphrase(passphrase);
     return passphrase;
   }
-  const envName = options.passphraseEnv ?? "WIKI_PASSPHRASE";
+  const { name: envName, explicit: explicitPassphraseEnv } = resolveEnvVarName(
+    "--passphrase-env",
+    options.passphraseEnv,
+    "WIKI_PASSPHRASE"
+  );
   const envValue = process.env[envName];
   if (envValue && envValue.trim().length > 0) {
     const passphrase = envValue.trim();
     validatePassphrase(passphrase);
     return passphrase;
+  }
+  if (explicitPassphraseEnv) {
+    throw new CliError(
+      `Passphrase input required. Environment variable ${envName} is not set or empty.`,
+      2,
+      "E_USAGE"
+    );
   }
   if (!process.stdin.isTTY) {
     throw new CliError(
@@ -947,6 +1003,10 @@ cli
   .config(mergedDefaults)
   .middleware((args: Arguments) => {
     lastKnownArgs = args as unknown as CliGlobals;
+    const inputFlag = (args as Arguments & { input?: boolean }).input;
+    if (typeof inputFlag === "boolean") {
+      args.nonInteractive = !inputFlag;
+    }
     if (typeof args.output === "string" && args.output.trim().length === 0) {
       throw new CliError("--output requires a non-empty file path.", 2, "E_USAGE");
     }
@@ -964,7 +1024,8 @@ cli
   .option("quiet", { type: "boolean", default: false, alias: "q" })
   .option("verbose", { type: "boolean", default: false, alias: "v" })
   .option("debug", { type: "boolean", default: false })
-.option("non-interactive", { type: "boolean", default: false, describe: "Disable prompts (non-interactive mode)" })
+  .option("input", { type: "boolean", default: true, describe: "Enable interactive prompts" })
+  .option("non-interactive", { type: "boolean", default: false, describe: "Disable prompts (non-interactive mode)" })
   .option("network", { type: "boolean", default: false, describe: "Allow network access" })
   .option("auth", { type: "boolean", default: false, describe: "Use stored token for Authorization" })
   .option("no-color", { type: "boolean", default: false, describe: "Disable color output" })
@@ -1138,9 +1199,9 @@ cli
             const passphrase = await resolvePassphrase({
               nonInteractive: globals.nonInteractive,
               confirm: true,
-              ...(globals.passphraseFile ? { passphraseFile: globals.passphraseFile } : {}),
+              ...(typeof globals.passphraseFile !== "undefined" ? { passphraseFile: globals.passphraseFile } : {}),
               ...(globals.passphraseStdin ? { passphraseStdin: globals.passphraseStdin } : {}),
-              ...(globals.passphraseEnv ? { passphraseEnv: globals.passphraseEnv } : {})
+              ...(typeof globals.passphraseEnv !== "undefined" ? { passphraseEnv: globals.passphraseEnv } : {})
             });
             const encrypted = encryptToken(token, passphrase);
             runIoOrThrow(() => saveCredentials(encrypted), "save credentials");

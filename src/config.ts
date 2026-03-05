@@ -214,7 +214,7 @@ function expectString(value: unknown, field: string): string {
 
 function expectNumber(value: unknown, field: string): number {
   if (typeof value !== "number" || Number.isNaN(value)) {
-    throw new Error(`${field} must be a number.`);
+    throw new Error(`${field} must be a valid number.`);
   }
   return value;
 }
