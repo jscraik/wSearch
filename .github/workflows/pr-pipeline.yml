@@ -158,7 +158,7 @@ jobs:
           npx tsx src/cli.ts check-environment --contract harness.contract.json --json --attestation artifacts/policy/ralph-smoke-attestation.json
       - name: Upload dependency policy artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependency-policy-artifacts
           path: artifacts/policy/
@@ -204,7 +204,7 @@ jobs:
           exit "${STATUS}"
       - name: Upload risk-policy telemetry artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: risk-policy-telemetry-artifacts
           path: artifacts/telemetry/risk-policy-gate.json
@@ -245,7 +245,7 @@ jobs:
           exit "${STATUS}"
       - name: Upload review telemetry artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: review-telemetry-artifacts
           path: artifacts/telemetry/review-gate.json
@@ -295,14 +295,14 @@ jobs:
           exit "${STATUS}"
       - name: Upload evidence artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: browser-evidence-artifacts
           path: artifacts/evidence/
           if-no-files-found: error
       - name: Upload evidence telemetry artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: evidence-telemetry-artifacts
           path: artifacts/telemetry/evidence-verify.json
@@ -345,14 +345,14 @@ jobs:
           exit "${STATUS}"
       - name: Upload remediation artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: remediation-decision-artifacts
           path: artifacts/remediation/
           if-no-files-found: error
       - name: Upload remediation telemetry artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: remediation-telemetry-artifacts
           path: artifacts/telemetry/remediation-decision.json
