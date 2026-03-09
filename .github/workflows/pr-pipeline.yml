@@ -446,7 +446,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Setup Trivy
-        uses: aquasecurity/setup-trivy@v0.2.2
+        uses: aquasecurity/setup-trivy@v0.2.5
       - name: Run Trivy filesystem scan
         run: trivy fs --severity HIGH,CRITICAL --exit-code 1 --no-progress .
       - name: Run Semgrep scan
