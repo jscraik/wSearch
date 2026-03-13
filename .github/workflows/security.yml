@@ -11,7 +11,7 @@ jobs:
   semgrep:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Ensure GitHub CLI is installed
         run: bash scripts/ensure-gh-cli.sh
       - uses: semgrep/semgrep-action@v1
@@ -21,7 +21,7 @@ jobs:
   gitleaks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
