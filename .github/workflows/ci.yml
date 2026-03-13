@@ -9,7 +9,7 @@ jobs:
   lint-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Ensure GitHub CLI is installed
         run: bash scripts/ensure-gh-cli.sh
       - uses: actions/setup-node@v6
