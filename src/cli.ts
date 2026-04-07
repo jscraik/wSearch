@@ -9,7 +9,7 @@ import { readFile, readStdin, promptHidden, promptText } from "./io.js";
 import { decryptToken, encryptToken } from "./crypto.js";
 import { getConfigPath, loadConfig, removeCredentials, saveConfig, saveCredentials, loadCredentials } from "./config.js";
 import { CliError } from "./cli-errors.js";
-import { parseAgentIntent, getErrorHelp, formatAgentError, normalizeEntityId, suggestCommand } from "./agent.js";
+import { getErrorHelp, formatAgentError } from "./agent.js";
 
 const DEFAULT_API_URL = "https://www.wikidata.org/w/rest.php/wikibase/v1";
 const DEFAULT_ACTION_URL = "https://www.wikidata.org/w/api.php";
