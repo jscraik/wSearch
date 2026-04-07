@@ -7,7 +7,7 @@
  * 3. Guide agents toward correct command patterns
  */
 
-import { CliError } from "./cli-errors.js";
+
 
 export type IntentResult =
   | { type: "success"; normalized: string[]; note?: string }
