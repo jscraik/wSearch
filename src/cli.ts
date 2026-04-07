@@ -10,6 +10,8 @@ import { decryptToken, encryptToken } from "./crypto.js";
 import { getConfigPath, loadConfig, removeCredentials, saveConfig, saveCredentials, loadCredentials } from "./config.js";
 import { CliError } from "./cli-errors.js";
 import { getErrorHelp, formatAgentError, parseAgentIntent, normalizeEntityId, suggestCommand } from "./agent.js";
+import fs from "fs";
+import path from "path";
 
 const DEFAULT_API_URL = "https://www.wikidata.org/w/rest.php/wikibase/v1";
 const DEFAULT_ACTION_URL = "https://www.wikidata.org/w/api.php";
@@ -719,15 +721,21 @@ const mergedDefaults: Partial<CliGlobals> = { ...configDefaults, ...envOverrides
 const rawArgv = hideBin(process.argv);
 let processedArgv = rawArgv;
 
-// Always run intent parsing first (to normalize --ai, --auto, --robot to --agent)
-const intentResult = parseAgentIntent(rawArgv);
-if (intentResult.type === "success") {
-  processedArgv = intentResult.normalized;
+// Detect agent mode: --agent, --agent=true (but not --agent=false)
+// Must check BEFORE any rewriting to preserve opt-in contract
+function isAgentEnabled(argv: string[]): boolean {
+  for (const arg of argv) {
+    if (arg === "--agent") return true;
+    if (arg === "--agent=true") return true;
+    if (arg === "--agent=false") return false;
+    // Don't treat other --agent=* as enabled (must be explicit true)
+  }
+  return false;
 }
 
-// Detect agent mode: --agent, --agent=true, or any alias that was normalized to --agent
-const isAgentMode = processedArgv.some(a => a === "--agent" || a.startsWith("--agent="));
+const isAgentMode = isAgentEnabled(rawArgv);
 if (isAgentMode) {
+  // Only run intent parsing when agent mode is explicitly enabled
   const intentResult = parseAgentIntent(rawArgv);
   if (intentResult.type === "success") {
     processedArgv = intentResult.normalized;
@@ -917,7 +925,12 @@ function isUnknownCommandWithTrailingHelp(argv: string[]): boolean {
     "action",
     "raw",
     "doctor",
-    "completion"
+    "completion",
+    "check-environment",
+    "risk-policy-gate",
+    "review-gate",
+    "evidence-verify",
+    "remediate"
   ]);
   const first = positionals[0];
   if (!first) return false;
@@ -1655,8 +1668,6 @@ cli
       const globals = args as unknown as CliGlobals & { contract?: string; attestation?: string };
       const data = { status: "ok", contract: globals.contract, timestamp: new Date().toISOString() };
       if (globals.attestation) {
-        const fs = require("fs");
-        const path = require("path");
         const dir = path.dirname(globals.attestation);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(globals.attestation, JSON.stringify(data, null, 2));

@@ -103,9 +103,9 @@ const INTENT_PATTERNS: IntentPattern[] = [
     description: "Fetch entity statements"
   },
   // "wsearch search Paris" -> "action search --query Paris"
-  // Stops at first flag to avoid swallowing flags
+  // Stops at first flag to avoid swallowing flags; allows hyphens in queries
   {
-    pattern: /(?:^|\s)search\s+([^-]+?)(?:\s+--|$)/i,
+    pattern: /(?:^|\s)search\s+(.+?)(?:\s+--|$)/i,
     command: "action search",
     transform: (m) => {
       const query = m[1];
@@ -115,8 +115,9 @@ const INTENT_PATTERNS: IntentPattern[] = [
     description: "Search for entities"
   },
   // "wsearch sparql file.rq" -> "wsearch sparql query --file file.rq"
+  // Matches with or without --agent flag present
   {
-    pattern: /^\s*(?:wsearch\s+)?sparql\s+(\S+\.rq|\S+\.sparql)$/i,
+    pattern: /(?:^|\s)sparql\s+(\S+\.rq|\S+\.sparql)(?:\s|$)/i,
     command: "sparql query --file",
     transform: (m) => {
       const file = m[1];
