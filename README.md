@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/@brainwav/wsearch-cli?color=d97757)](https://www.npmjs.com/package/@brainwav/wsearch-cli)
 [![ci](https://github.com/jscraik/wSearch-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/jscraik/wSearch-CLI/actions/workflows/ci.yml)
-[![license](https://img.shields.io/badge/license-MIT-788c5d)](LICENSE)
+[![license](https://img.shields.io/badge/license-Apache%202.0-788c5d)](LICENSE)
 
 **Query Wikidata safely from the command line.** Built for automation, designed for humans.
 
@@ -208,7 +208,7 @@ See [docs/AGENTS.md](docs/AGENTS.md) for complete agent integration guide.
 
 ## License
 
-MIT — See [LICENSE](LICENSE)
+Apache 2.0 — See [LICENSE](LICENSE)
 
 ---
 
