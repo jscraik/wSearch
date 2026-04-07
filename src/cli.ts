@@ -712,15 +712,37 @@ if (rawArgv.includes("--agent")) {
   const intentResult = parseAgentIntent(rawArgv);
   if (intentResult.type === "success") {
     processedArgv = intentResult.normalized;
-    // Apply entity ID normalization to positional arguments
+    // Find the index of the first true positional (non-flag, non-flag-value)
+    let firstPositionalIndex = -1;
+    for (let i = 0; i < processedArgv.length; i++) {
+      const arg = processedArgv[i];
+      if (!arg || arg.startsWith("-")) {
+        continue;
+      }
+      // Check if this is a value for the previous flag
+      if (i > 0) {
+        const prevArg = processedArgv[i - 1];
+        if (prevArg?.startsWith("-") && !prevArg.includes("=")) {
+          // Previous was a flag without =, so this might be its value
+          // Skip flags that are known booleans
+          const knownBooleans = ["--agent", "--network", "--json", "--plain", "--auth", "--quiet", "--verbose", "--debug", "--no-color", "--print-request", "--passphrase-stdin", "--token-stdin", "--non-interactive", "--input"];
+          if (!knownBooleans.includes(prevArg)) {
+            continue;
+          }
+        }
+      }
+      firstPositionalIndex = i;
+      break;
+    }
+    // Apply entity ID normalization and fuzzy matching
     processedArgv = processedArgv.map((arg, i) => {
       // Skip flags and their values
       if (arg.startsWith("-")) return arg;
       // Try to normalize entity IDs
       const normalized = normalizeEntityId(arg);
       if (normalized) return normalized;
-      // Try fuzzy command matching for the first positional
-      if (i === 0 || (i > 0 && processedArgv[i - 1]?.startsWith("-"))) {
+      // Try fuzzy command matching only for the first positional
+      if (i === firstPositionalIndex) {
         const suggestions = suggestCommand(arg);
         if (suggestions.length > 0) {
           return suggestions[0]!;
@@ -1600,7 +1622,10 @@ cli
   .command(
     "check-environment",
     "Verify environment setup",
-    () => {},
+    (y: Argv) =>
+      y
+        .option("contract", { type: "string", describe: "Contract file path" })
+        .option("attestation", { type: "string", describe: "Attestation file path" }),
     (args: Arguments) => {
       const globals = args as unknown as CliGlobals & { contract?: string; attestation?: string };
       const data = { status: "ok", timestamp: new Date().toISOString() };
@@ -1610,7 +1635,8 @@ cli
   .command(
     "risk-policy-gate",
     "Evaluate risk policy",
-    () => {},
+    (y: Argv) =>
+      y.option("files", { type: "string", describe: "Files to evaluate (optional)" }),
     (args: Arguments) => {
       const globals = args as unknown as CliGlobals & { files?: string };
       outputResult(globals, "wiki.risk-policy-gate.v1", "Risk policy gate passed", { status: "passed" });
@@ -1637,13 +1663,18 @@ cli
   .command(
     "remediate run",
     "Run remediation",
-    () => {},
+    (y: Argv) =>
+      y.option("mode", {
+        type: "string",
+        choices: ["dry-run", "run"] as const,
+        describe: "Remediation mode (dry-run or run)"
+      }),
     (args: Arguments) => {
       const globals = args as unknown as CliGlobals & { mode?: string };
       outputResult(globals, "wiki.remediate.v1", "Remediation completed", { status: "completed", mode: globals.mode || "dry-run" });
     }
-)
-    .completion("completion", "Generate shell completion script")
+  )
+  .completion("completion", "Generate shell completion script")
   .strict()
   .recommendCommands()
   .demandCommand(1)

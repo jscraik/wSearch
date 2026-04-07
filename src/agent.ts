@@ -191,12 +191,12 @@ export function getErrorHelp(
           context: "Q42 = Douglas Adams",
         },
         {
-          command: "wsearch --network entity get P31",
+          command: "wsearch --network --user-agent \"MyApp/1.0\" entity get P31",
           description: "Get property by P-id",
           context: "P31 = instance of",
         },
         {
-          command: "wsearch --network entity get L123",
+          command: "wsearch --network --user-agent \"MyApp/1.0\" entity get L123",
           description: "Get lexeme by L-id",
           context: "Lexeme for dictionary entries",
         },
@@ -211,12 +211,12 @@ export function getErrorHelp(
       likelyIntent: "Make a raw API request",
       examples: [
         {
-          command: "wsearch --network raw request GET /entities/items/Q42",
+          command: "wsearch --network --user-agent \"MyApp/1.0\" raw request GET /entities/items/Q42",
           description: "Get entity via REST",
           context: "Direct API access",
         },
         {
-          command: "wsearch --network raw request GET /entities/properties/P31",
+          command: "wsearch --network --user-agent \"MyApp/1.0\" raw request GET /entities/properties/P31",
           description: "Get property via REST",
           context: "Property lookup",
         },
@@ -301,17 +301,17 @@ export function getErrorHelp(
       likelyIntent: "Run a SPARQL query",
       examples: [
         {
-          command: "wsearch --network sparql query --file query.rq",
+          command: "wsearch --network --user-agent \"MyApp/1.0\" sparql query --file query.rq",
           description: "Query from file",
           context: "Recommended for complex queries",
         },
         {
-          command: "wsearch --network sparql query --query 'SELECT * WHERE { ?s ?p ?o } LIMIT 10'",
+          command: "wsearch --network --user-agent \"MyApp/1.0\" sparql query --query 'SELECT * WHERE { ?s ?p ?o } LIMIT 10'",
           description: "Inline query",
           context: "For simple queries",
         },
         {
-          command: "cat query.rq | wsearch --network sparql query",
+          command: "cat query.rq | wsearch --network --user-agent \"MyApp/1.0\" sparql query",
           description: "Query via stdin",
           context: "Pipeline-friendly",
         },

@@ -190,7 +190,7 @@ wsearch --network --user-agent "Agent/1.0" entity get Q42
 
 ```bash
 # Wrong:
-wsearch --network --user-agent "Agent/1.0" entity get Q42
+wsearch --network entity get Q42
 # Error: User-Agent is required. Provide --user-agent or WIKI_USER_AGENT.
 
 # Right:
@@ -198,7 +198,7 @@ wsearch --network --user-agent "MyAgent/1.0" entity get Q42
 
 # Better (set once):
 wsearch config set user-agent "MyAgent/1.0"
-wsearch --network --user-agent "Agent/1.0" entity get Q42  # Now works without --user-agent
+wsearch --network entity get Q42  # Now works without --user-agent flag
 ```
 
 ### Invalid Entity ID

@@ -11,7 +11,7 @@
 wsearch --network --user-agent "MyApp/1.0" entity get Q42
 
 # Run SPARQL with CSV output for spreadsheets
-wsearch --network sparql query --file query.rq --format csv
+wsearch --network --user-agent "MyApp/1.0" sparql query --file query.rq --format csv
 
 # Preview before you run
 wsearch --print-request entity get Q42
@@ -151,12 +151,12 @@ wsearch --network --auth entity get Q42
 
 ### Save entity to file
 ```bash
-wsearch --network entity get Q42 --output Q42.json
+wsearch --network --user-agent "MyApp/1.0" entity get Q42 --output Q42.json
 ```
 
 ### SPARQL to CSV for Excel
 ```bash
-wsearch --network sparql query --file query.rq --format csv > results.csv
+wsearch --network --user-agent "MyApp/1.0" sparql query --file query.rq --format csv > results.csv
 ```
 
 ### Batch process in a script
@@ -191,7 +191,7 @@ wsearch --agent --network --non-interactive --json \
 ```
 
 **Agent mode features:**
-- **Flexible parsing**: `wsearch get q42` → normalized to `entity get Q42`
+- **Flexible parsing**: `wsearch get q42` → normalized to `entity get Q42` (when combined with full command: `wsearch --agent --network --user-agent "Agent/1.0" get q42`)
 - **Detailed errors**: Every error includes context, examples, and fix hints
 - **Intent recognition**: Understands common shorthand patterns
 - **Consistent JSON**: Schema-versioned output for reliable parsing
