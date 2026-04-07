@@ -1747,7 +1747,13 @@ cli
     const { mode, output, requestId, agent } = resolveErrorContext();
 
     if (mode === "json") {
-      const payload = envelope("wiki.error.v1", message, "error", null, [{ message, code }], requestId);
+      let errorMessage = message;
+      if (agent) {
+        const help = getErrorHelp(code, message);
+        errorMessage = formatAgentError(help, true);
+      }
+      const errors = [{ message: errorMessage, code }];
+      const payload = envelope("wiki.error.v1", message, "error", null, errors, requestId);
       try {
         writeOutput(`${JSON.stringify(payload)}\n`, output);
       } catch (_outputError) {

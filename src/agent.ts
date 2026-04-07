@@ -473,15 +473,6 @@ export function normalizeEntityId(input: string): string | null {
 }
 
 /**
- * Try to fix common flag ordering issues
- */
-export function fixFlagOrder(args: string[]): string[] {
-  // Do not reorder tokens blindly; preserve caller intent.
-  // Agent mode accepts commands as-written.
-  return [...args];
-}
-
-/**
  * Suggest corrections for unknown commands
  */
 export function suggestCommand(attempted: string): string[] {
