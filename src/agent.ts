@@ -464,8 +464,9 @@ export function formatAgentError(help: ErrorHelp, agentMode: boolean): string {
  */
 export function normalizeEntityId(input: string): string | null {
   const trimmed = input.trim();
-  // Allow lowercase q/p/l
-  const match = trimmed.match(/^([qpl])([\d]+)$/i);
+  // Allow flexible formats: q42, Q42, q-42, q_42, q.42, q 42
+  // Must match the same pattern used in assertEntityId for consistency
+  const match = trimmed.match(/^([qpl])[\s\-._]*([\d]+)$/i);
   if (match?.[1] && match?.[2]) {
     return match[1].toUpperCase() + match[2];
   }

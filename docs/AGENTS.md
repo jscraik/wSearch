@@ -91,13 +91,17 @@ Agent note: When scripting, use --non-interactive and --json for reliable output
 For reliable agent operation, always include:
 
 ```bash
+# --agent: Enable agent mode for detailed errors
+# --network: Required for all API calls  
+# --non-interactive: Prevents prompts
+# --json: Produces machine-readable output
 wsearch \
-  --agent \           # Enable agent mode for detailed errors
-  --network \         # Required for all API calls
-  --non-interactive \ # Never prompt for input
-  --json \            # Machine-readable output
+  --agent \
+  --network \
+  --non-interactive \
+  --json \
   --user-agent "YourAgent/1.0" \
-  --request-id "$(uuidgen)"  # For tracing
+  --request-id "$(uuidgen)"
 ```
 
 ### Entity Lookup Pattern
@@ -373,7 +377,7 @@ chmod 600 ~/.config/wsearch-cli/credentials
 ```bash
 # Automatic retry with exponential backoff is built-in
 # To increase retries:
-wsearch --network --retries 5 --retry-backoff 1000 entity get Q42
+wsearch --network --user-agent "Agent/1.0" --retries 5 --retry-backoff 1000 entity get Q42
 ```
 
 ## Further Reading

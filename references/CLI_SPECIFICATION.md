@@ -167,7 +167,6 @@ Commands:
 | 1 | Generic failure | I/O errors, unexpected exceptions |
 | 2 | Invalid usage | Validation errors, bad arguments, malformed input |
 | 3 | Policy refusal | Missing `--network`, missing `--user-agent` |
-| 4 | Partial success | Some operations succeeded (batch scenarios) |
 | 130 | User abort | SIGINT (Ctrl+C) |
 
 **Note on SIGINT Handling:** The CLI relies on Node.js default SIGINT handling, which exits with code 130. For most use cases, this is sufficient. Future versions may add explicit signal handling for graceful shutdown during long-running operations.
