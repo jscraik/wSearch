@@ -34,6 +34,7 @@
     "gitleaks": "gitleaks detect --source . --redact",
     "lint:types": "tsc -p tsconfig.json --noEmit",
     "lint:docs": "markdownlint-cli2",
+    "docs:lint": "markdownlint-cli2",
     "lint:docs:fix": "markdownlint-cli2 --fix",
     "lint:docs:vale": "vale --config .vale.ini README.md docs references",
     "lint:docs:readability": "python3 scripts/check_readability.py README.md docs references",
