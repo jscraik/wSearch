@@ -1723,10 +1723,14 @@ cli
   .command(
     "remediate run",
     "Run remediation",
-    () => {},
+    (y: Argv) =>
+      y
+        .option("findings", { type: "string" })
+        .option("contract", { type: "string" })
+        .option("mode", { type: "string" }),
     (args: Arguments) => {
-      const globals = args as unknown as CliGlobals & { mode?: string };
-      outputResult(globals, "wiki.remediate.v1", "Remediation completed", { status: "completed", mode: globals.mode || "dry-run" });
+      const globals = args as unknown as CliGlobals & { mode?: string; findings?: string; contract?: string };
+      outputResult(globals, "wiki.remediate.v1", "Remediation completed", { status: "completed", mode: globals.mode || "dry-run", findings: globals.findings, contract: globals.contract });
     }
 )
     .completion("completion", "Generate shell completion script")
