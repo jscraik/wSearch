@@ -1,283 +1,215 @@
-<div align="center">
-  <img src="brand/wSearch-brand-logo.png" alt="wSearch CLI Logo" width="600"/>
-</div>
+# wSearch CLI
 
 [![npm](https://img.shields.io/npm/v/@brainwav/wsearch-cli?color=d97757)](https://www.npmjs.com/package/@brainwav/wsearch-cli)
 [![ci](https://github.com/jscraik/wSearch-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/jscraik/wSearch-CLI/actions/workflows/ci.yml)
-[![security](https://img.shields.io/badge/security-policy-6a9bcc)](SECURITY.md)
 [![license](https://img.shields.io/badge/license-MIT-788c5d)](LICENSE)
 
-# brAInwav wSearch helps developers query Wikidata safely and quickly
+**Query Wikidata safely from the command line.** Built for automation, designed for humans.
 
-Safe, script-friendly CLI for Wikidata REST, SPARQL, and Action API queries. Read-only by default.
+```bash
+# Get an entity
+wsearch --network --user-agent "MyApp/1.0" entity get Q42
 
-Last updated: 2026-01-04
+# Run SPARQL with CSV output for spreadsheets
+wsearch --network sparql query --file query.rq --format csv
 
-## Table of contents
-- [Prerequisites](#prerequisites)
-- [Quickstart](#quickstart)
-- [Common tasks](#common-tasks)
-- [Risks and assumptions](#risks-and-assumptions)
-- [Troubleshooting](#troubleshooting)
-- [Reference](#reference)
-- [About this document](#about-this-document)
+# Preview before you run
+wsearch --print-request entity get Q42
+```
 
-## Prerequisites
-- **Required**: Node.js 18 or later, npm, internet access, and a descriptive User-Agent string for Wikimedia APIs
-- **Optional**: OAuth token for higher rate limits (still read-only access)
+## Why wSearch?
 
-## Quickstart
+| Without wSearch | With wSearch |
+|-----------------|--------------|
+| Craft curl commands by hand | Purpose-built Wikidata commands |
+| Handle auth tokens insecurely | Encrypted storage (scrypt + AES-256-GCM) |
+| Parse inconsistent JSON | Schema-versioned output you can rely on |
+| Retry logic? You build it | Automatic retries with exponential backoff |
+| Guess if commands work | Preview mode shows exactly what will be sent |
+| Confusing errors for AI agents | **Agent mode** with detailed, actionable help |
 
-**What you'll achieve**: Install the CLI and run your first Wikidata query in under 2 minutes.
+**Read-only by default.** Network disabled until you explicitly enable it. No accidental data changes.
 
-### 1) Install
-```sh
+## Install
+
+```bash
 npm install -g @brainwav/wsearch-cli
 ```
 
-### 2) Run a query
-```sh
-wsearch --network --user-agent "MyApp/1.0 (https://example.org/contact)" entity get Q42
+Requires Node.js 18+.
+
+## Quick Start
+
+```bash
+# 1. Query an entity (items, properties, lexemes)
+wsearch --network --user-agent "MyApp/1.0 (https://example.com)" entity get Q42
+
+# 2. Run SPARQL from a file
+wsearch --network sparql query --file query.rq --format json
+
+# 3. Search by name
+wsearch --network action search --query "Paris" --limit 5
 ```
 
-### 3) Verify
-Expected output:
-- JSON containing entity data with fields: `id`, `labels`, `descriptions`, `aliases`, and `sitelinks`
-- Exit code `0` on success
-- No error messages about User-Agent or network access
+All commands require `--network` (opt-in for safety) and `--user-agent` (Wikimedia API requirement).
 
-## Common tasks
-### Get an entity and save it to a file
-**What you get**: The complete entity JSON for any Q/P/L identifier saved to a local file.
+## Core Commands
 
-**Steps**:
-```sh
-wsearch --network --user-agent "MyApp/1.0 (https://example.org/contact)" \
-  entity get Q42 --output ./Q42.json
+```bash
+# Entities: get data or statements for any Q/P/L ID
+wsearch entity get Q42                    # Get item
+wsearch entity get P31                    # Get property
+wsearch entity statements Q42             # Get just the statements
+
+# SPARQL: query with multiple output formats
+wsearch sparql query --file query.rq --format json   # JSON results
+wsearch sparql query --file query.rq --format csv    # For spreadsheets
+wsearch sparql query --file query.rq --format tsv    # For processing
+
+# Search: find entities by name
+wsearch action search --query "New York" --language en --limit 10
+
+# Raw requests: full API access when you need it
+wsearch raw request GET /entities/items/Q42
+
+# Configuration: set defaults so flags are optional
+wsearch config set user-agent "MyApp/1.0"
+wsearch config set timeout 30000
+wsearch config get user-agent
+
+# Authentication: encrypted token storage
+wsearch auth login                        # Store token securely
+wsearch --network --auth entity get Q42   # Use stored token
+wsearch auth logout                       # Remove stored token
+
+# Diagnostics
+wsearch doctor                            # Check your setup
+wsearch --print-request entity get Q42    # Preview without sending
 ```
 
-**Verify**:
-- File `./Q42.json` exists and contains entity data
-- File includes `id`, `labels`, `descriptions`, and `claims` fields
-- File size is greater than 0 bytes
+## Output Formats
 
-### Run a SPARQL query from a file
-**What you get**: SPARQL query results in JSON, CSV, or TSV format.
+**Default** — Human-readable, colored when TTY detected  
+**`--json`** — Machine-readable envelope with schema versioning  
+**`--plain`** — Stable text output for scripts
 
-**Steps**:
-```sh
-wsearch --network --user-agent "MyApp/1.0 (https://example.org/contact)" \
-  sparql query --file ./query.rq --format json
+```bash
+# JSON: structured, schema-versioned, ideal for automation
+wsearch --network --json entity get Q42 | jq .data.labels.en.value
+
+# Plain: pipe-friendly, predictable
+wsearch --network --plain entity get Q42 | grep -o Q[0-9]*
 ```
 
-**Verify**:
-- Results printed to stdout with `head` and `results` fields
-- Exit code `0` indicates successful query execution
+JSON output includes:
+- Schema version (e.g., `wiki.entity.get.v1`)
+- Request ID tracking
+- Structured errors with codes
+- Timestamp and tool version
 
-### Search via the Action API
-**What you get**: Entity search results matching your query, with IDs and labels.
+## Security Features
 
-**Steps**:
-```sh
-wsearch --network --user-agent "MyApp/1.0 (https://example.org/contact)" \
-  action search --query "New York" --language en --limit 5
-```
+| Feature | What it does |
+|---------|--------------|
+| **Network opt-in** | `--network` required for all API calls; disabled by default |
+| **Encrypted tokens** | scrypt + AES-256-GCM with 0o600 file permissions |
+| **Path traversal prevention** | Raw requests validated; no .. or encoded separators allowed |
+| **Token redaction** | Authorization headers redacted in logs and previews |
+| **No secrets in args** | Tokens only via files, stdin, or env vars—never CLI args |
 
-**Verify**:
-- Results include entity IDs (e.g., Q60 for New York City)
-- Each result contains `id`, `label`, and `description` fields
-- Number of results matches your `--limit` value or fewer
+## Exit Codes for Automation
 
-### Use an encrypted token for requests
-**What you get**: Authenticated requests using `Authorization: Bearer ...` header with encrypted token storage.
+| Code | Meaning | When you will see it |
+|------|---------|-------------------|
+| 0 | Success | Command completed |
+| 1 | Internal error | Unexpected failure, I/O error |
+| 2 | Usage error | Invalid arguments or validation failure |
+| 3 | Policy error | Missing `--network` or `--user-agent` |
+| 130 | Interrupted | User pressed Ctrl+C |
 
-**Steps**:
-```sh
-cat token.txt | wsearch auth login --token-stdin
-wsearch --network --auth --user-agent "MyApp/1.0 (https://example.org/contact)" entity get Q42
-```
+Use `--non-interactive` in scripts to ensure commands never hang on prompts.
 
-**Non-interactive (CI-friendly) example**:
-```sh
-export WIKI_TOKEN="your-token"
-export WIKI_PASSPHRASE="your-passphrase"
+## Configuration Hierarchy
+
+Settings are resolved in this order (first wins):
+
+1. CLI flags (e.g., `--timeout 5000`)
+2. Environment variables (e.g., `WIKI_TIMEOUT=5000`)
+3. Config file (`~/.config/wsearch-cli/config.json`)
+4. Defaults
+
+```bash
+# Environment variables for CI/CD
+export WIKI_USER_AGENT="MyApp/1.0"
+export WIKI_TOKEN="..."
+export WIKI_PASSPHRASE="..."
 wsearch auth login
+wsearch --network --auth entity get Q42
 ```
 
-**Custom env var names**:
-```sh
-export MY_WIKI_TOKEN="your-token"
-export MY_WIKI_PASSPHRASE="your-passphrase"
-wsearch auth login --token-env MY_WIKI_TOKEN --passphrase-env MY_WIKI_PASSPHRASE
+## Practical Examples
+
+### Save entity to file
+```bash
+wsearch --network entity get Q42 --output Q42.json
 ```
 
-**Verify**:
-- Command `wsearch auth status` shows "Logged in"
-- Token stored in `~/.config/wsearch-cli/credentials.json`
-- Authenticated requests succeed without errors
-
-### Set a default User-Agent
-**What you get**: A persistent User-Agent configuration, eliminating the need to specify `--user-agent` on every command.
-
-**Steps**:
-```sh
-wsearch config set user-agent "MyApp/1.0 (https://example.org/contact)"
-wsearch --network entity get Q42
+### SPARQL to CSV for Excel
+```bash
+wsearch --network sparql query --file query.rq --format csv > results.csv
 ```
 
-**Verify**:
-- Command `wsearch config get user-agent` returns your configured value
-- Requests succeed without the `--user-agent` flag
+### Batch process in a script
+```bash
+#!/bin/bash
+set -euo pipefail
 
-### Preview a request without sending it
-**What you get**: A preview of the HTTP method, URL, and headers (with tokens redacted) without making an actual network call.
-
-**Steps**:
-```sh
-wsearch --print-request --user-agent "MyApp/1.0 (https://example.org/contact)" entity get Q42
+for id in Q42 Q5 Q30; do
+  wsearch --network --json --non-interactive \
+    --user-agent "Batch/1.0" \
+    --request-id "batch-$id" \
+    entity get "$id" > "entities/${id}.json"
+done
 ```
 
-**Verify**:
-- Output shows request method (GET/POST), full URL, and headers
-- No actual API call is made (check with network monitoring)
-- Sensitive values like tokens are redacted in output
-
-### Check local setup
-**What you get**: A quick diagnostic view of your configuration state without making any network requests.
-
-**Steps**:
-```sh
-wsearch doctor
+### Preview before automation
+```bash
+wsearch --print-request --user-agent "Test/1.0" entity get Q42
+# Shows: method, URL, headers (tokens redacted)
+# No network call made
 ```
 
-**Verify**:
-- Output reports User-Agent configuration status
-- Output shows whether authentication token is present
-- Output indicates config file location
-- Exit code `0` indicates no critical issues
+## AI Agent Mode
 
-## Risks and assumptions
+Designed for AI coding agents that need reliable automation:
 
-**Network access**: The CLI requires internet connectivity for API calls. Network access is disabled by default and must be explicitly enabled with `--network`.
-
-**User-Agent requirement**: Wikimedia APIs require a descriptive User-Agent header. Missing or empty values will block requests.
-
-**Token storage**: Authentication tokens are encrypted and stored on disk. Protect your passphrase and avoid sharing logs containing sensitive data.
-
-**Read-only operations**: The CLI provides read-only access to Wikidata. It does not mutate data, but API responses may contain sensitive information.
-
-**File overwrites**: Output files are overwritten if the path already exists. Choose file paths carefully to avoid data loss.
-
-## Troubleshooting
-
-### Symptom: "User-Agent is required"
-**Cause**: Wikimedia APIs require a descriptive User-Agent header for all requests.
-
-**Fix**:
-```sh
-wsearch --network --user-agent "MyApp/1.0 (https://example.org/contact)" entity get Q42
+```bash
+# Agent mode provides detailed error help with examples
+wsearch --agent --network --non-interactive --json \
+  --user-agent "Agent/1.0" \
+  entity get Q42
 ```
 
-Or set it permanently:
-```sh
-wsearch config set user-agent "MyApp/1.0 (https://example.org/contact)"
-```
+**Agent mode features:**
+- **Flexible parsing**: `wsearch get q42` → normalized to `entity get Q42`
+- **Detailed errors**: Every error includes context, examples, and fix hints
+- **Intent recognition**: Understands common shorthand patterns
+- **Consistent JSON**: Schema-versioned output for reliable parsing
 
-### Symptom: "Network access is disabled"
-**Cause**: The CLI defaults to no-network mode for safety.
+See [docs/AGENTS.md](docs/AGENTS.md) for complete agent integration guide.
 
-**Fix**:
-```sh
-wsearch --network --user-agent "MyApp/1.0 (https://example.org/contact)" entity get Q42
-```
+## Documentation
 
-### Symptom: 429 or rate-limit errors
-**Cause**: API throttling due to too many requests in a short time period.
+- [Usage reference](docs/USAGE.md) — Complete command and flag documentation
+- [Configuration](docs/CONFIG.md) — Config file, environment variables, precedence
+- [Security](docs/SECURITY.md) — Token encryption, permissions, best practices
+- [Troubleshooting](docs/TROUBLESHOOTING.md) — Common issues and fixes
+- [AI Agent Guide](docs/AGENTS.md) — Using wsearch from AI agents
 
-**Fix**:
-- Wait 60 seconds before retrying
-- Reduce request frequency in your scripts
-- Consider using authentication for higher rate limits:
-```sh
-wsearch auth login
-wsearch --network --auth --user-agent "MyApp/1.0 (https://example.org/contact)" entity get Q42
-```
+## License
 
-### Symptom: "Invalid token" or authentication failed
-**Cause**: Token is expired, malformed, or passphrase is incorrect.
-
-**Fix**:
-```sh
-# Log out and log back in with a fresh token
-wsearch auth logout
-cat new-token.txt | wsearch auth login --token-stdin
-wsearch auth status  # Verify login succeeded
-```
-
-## Reference
-
-### Documentation
-- [Docs index](docs/README.md)
-- [Getting started guide](docs/GETTING_STARTED.md)
-- [Usage reference](docs/USAGE.md)
-- [Configuration guide](docs/CONFIG.md)
-- [Troubleshooting guide](docs/TROUBLESHOOTING.md)
-- [FAQ](docs/FAQ.md)
-- [Changelog](CHANGELOG.md) (Keep a Changelog format)
-- [License](LICENSE) (MIT)
-- [Brand guidelines](docs/BRAND.md)
-
-### Commands
-- `wsearch help [command]` - Show help for any command
-- `wsearch entity get|statements <id>` - Fetch entity data or statements
-- `wsearch sparql query --file <query.rq>` - Run SPARQL queries
-- `wsearch action search --query <text>` - Search entities by label
-- `wsearch raw request <method> <path>` - Make raw API requests
-- `wsearch auth login|status|logout` - Manage authentication tokens
-- `wsearch config get|set|path` - Manage configuration
-- `wsearch doctor` - Check local setup and configuration
-- `wsearch completion` - Generate shell completion scripts
-
-## About this document
-- **Audience**: Developers and data teams using the CLI (beginner to intermediate)
-- **Scope**: Install, configure, and run read-only Wikidata queries with the CLI
-- **Non-scope**: Wikidata data modeling, write operations, or hosting a Wikibase instance
-- **Owner**: Repository maintainers
-- **Review cadence**: Every release or at least quarterly
-- **Required approvals**: Maintainers for public changes
+MIT — See [LICENSE](LICENSE)
 
 ---
 
-<img
-  src="./brand/brand-mark.webp"
-  srcset="./brand/brand-mark.webp 1x, ./brand/brand-mark@2x.webp 2x"
-  alt="brAInwav"
-  height="28"
-  align="left"
-/>
-
-<br clear="left" />
-
-**brAInwav**  
-_from demo to duty_
-
-<!-- AGENT-FIRST-WORKFLOW:START -->
-## Agent-first workflow
-
-1. Create/update implementation plan using `.agent/PLANS.md` contract.
-2. Validate plan graph:
-
-```bash
-python3 /Users/jamiecraik/.codex/scripts/plan-graph-lint.py .agent/PLANS.md
-```
-
-3. Run canonical verification:
-
-```bash
-/Users/jamiecraik/.codex/scripts/verify-work.sh
-```
-
-4. Follow global scaffold policy:
-
-- `/Users/jamiecraik/.codex/instructions/agent-first-scaffold-spec.md`
-<!-- AGENT-FIRST-WORKFLOW:END -->
+**brAInwav** — _from demo to duty_

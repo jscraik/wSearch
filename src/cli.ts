@@ -8,22 +8,13 @@ import { actionSearch, apiPathUrl, entityPath, getEntity, getStatements, rawRequ
 import { readFile, readStdin, promptHidden, promptText } from "./io.js";
 import { decryptToken, encryptToken } from "./crypto.js";
 import { getConfigPath, loadConfig, removeCredentials, saveConfig, saveCredentials, loadCredentials } from "./config.js";
+import { CliError } from "./cli-errors.js";
+import { parseAgentIntent, getErrorHelp, formatAgentError, normalizeEntityId, suggestCommand } from "./agent.js";
 
 const DEFAULT_API_URL = "https://www.wikidata.org/w/rest.php/wikibase/v1";
 const DEFAULT_ACTION_URL = "https://www.wikidata.org/w/api.php";
 const DEFAULT_SPARQL_URL = "https://query.wikidata.org/sparql";
 const MAX_TIMER_MS = 2_147_483_647;
-
-class CliError extends Error {
-  exitCode: number;
-  code: string;
-
-  constructor(message: string, exitCode = 1, code = "E_INTERNAL") {
-    super(message);
-    this.exitCode = exitCode;
-    this.code = code;
-  }
-}
 
 type RequestPreview = {
   method: string;
@@ -339,14 +330,15 @@ function parseRequestIdFromArgv(argv: string[]): string | undefined {
   return undefined;
 }
 
-function resolveErrorContext(): { mode: "plain" | "json"; output?: string; requestId?: string } {
+function resolveErrorContext(): { mode: "plain" | "json"; output?: string; requestId?: string; agent?: boolean } {
   const fallback = parseOutputArgsFromArgv(hideBin(process.argv));
   const requestId = lastKnownArgs.requestId ?? parseRequestIdFromArgv(hideBin(process.argv));
   const json = Boolean(lastKnownArgs.json ?? fallback.json);
   const output = lastKnownArgs.output ?? fallback.output;
-  const context: { mode: "plain" | "json"; output?: string; requestId?: string } = json
-    ? { mode: "json" }
-    : { mode: "plain" };
+  const agent = Boolean(lastKnownArgs.agent) || hideBin(process.argv).includes("--agent");
+  const context: { mode: "plain" | "json"; output?: string; requestId?: string; agent?: boolean } = json
+    ? { mode: "json", agent }
+    : { mode: "plain", agent };
   if (json && output) {
     context.output = output;
   }
@@ -411,11 +403,17 @@ function resolveEnvVarName(optionFlag: string, providedName: string | undefined,
 }
 
 function assertEntityId(id: string): string {
-  const normalized = id.trim().toUpperCase();
-  if (!/^[QPL]\d+$/.test(normalized)) {
+  const trimmed = id.trim();
+  // Support flexible formats in agent mode: q42, Q42, q-42, etc.
+  const flexibleMatch = trimmed.match(/^([qpl])[\s\-._]*([\d]+)$/i);
+  if (flexibleMatch?.[1] && flexibleMatch?.[2]) {
+    return flexibleMatch[1].toUpperCase() + flexibleMatch[2];
+  }
+  // Strict format check
+  if (!/^[QPL]\d+$/.test(trimmed.toUpperCase())) {
     throw new CliError(`Invalid entity id "${id}". Expected Q*, P*, or L* id format.`, 2, "E_USAGE");
   }
-  return normalized;
+  return trimmed.toUpperCase();
 }
 
 function assertHttpMethod(method: string): string {
@@ -955,7 +953,12 @@ function emitUnhandledCliError(error: unknown): never {
     error instanceof CliError
       ? error
       : new CliError(error instanceof Error ? error.message : "Unexpected error", 1, "E_INTERNAL");
-  const { mode, output, requestId } = resolveErrorContext();
+  const { mode, output, requestId, agent } = resolveErrorContext();
+  if (agent) {
+    const help = getErrorHelp(resolved.code, resolved.message);
+    process.stderr.write(`${formatAgentError(help, true)}\n`);
+    process.exit(resolved.exitCode);
+  }
   if (mode === "json") {
     const payload = envelope(
       "wiki.error.v1",
@@ -1026,6 +1029,7 @@ cli
   .option("debug", { type: "boolean", default: false })
   .option("input", { type: "boolean", default: true, describe: "Enable interactive prompts" })
   .option("non-interactive", { type: "boolean", default: false, describe: "Disable prompts (non-interactive mode)" })
+  .option("agent", { type: "boolean", default: false, describe: "Agent mode: flexible parsing, detailed error help" })
   .option("network", { type: "boolean", default: false, describe: "Allow network access" })
   .option("auth", { type: "boolean", default: false, describe: "Use stored token for Authorization" })
   .option("no-color", { type: "boolean", default: false, describe: "Disable color output" })
@@ -1563,7 +1567,7 @@ cli
       !err || (err as { name?: string }).name === "YError" || (err instanceof CliError && err.exitCode === 2);
     const code = err instanceof CliError ? err.code : isUsageError ? "E_USAGE" : "E_INTERNAL";
     const exitCode = err instanceof CliError ? err.exitCode : isUsageError ? 2 : 1;
-    const { mode, output, requestId } = resolveErrorContext();
+    const { mode, output, requestId, agent } = resolveErrorContext();
 
     if (mode === "json") {
       const payload = envelope("wiki.error.v1", message, "error", null, [{ message, code }], requestId);
@@ -1572,6 +1576,13 @@ cli
       } catch (_outputError) {
         process.stdout.write(`${JSON.stringify(payload)}\n`);
       }
+      process.exit(exitCode);
+    }
+
+    if (agent) {
+      // Agent mode: detailed error help with examples
+      const help = getErrorHelp(code, message);
+      process.stderr.write(`${formatAgentError(help, true)}\n`);
       process.exit(exitCode);
     }
 

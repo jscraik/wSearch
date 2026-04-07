@@ -38,4 +38,5 @@ export type CliGlobals = {
   timeout: number;
   retries: number;
   retryBackoff: number;
+  agent?: boolean;
 };
