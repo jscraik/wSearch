@@ -45,32 +45,32 @@ Requires Node.js 18+.
 wsearch --network --user-agent "MyApp/1.0 (https://example.com)" entity get Q42
 
 # 2. Run SPARQL from a file
-wsearch --network sparql query --file query.rq --format json
+wsearch --network --user-agent "MyApp/1.0" sparql query --file query.rq --format json
 
 # 3. Search by name
-wsearch --network action search --query "Paris" --limit 5
+wsearch --network --user-agent "MyApp/1.0" action search --query "Paris" --limit 5
 ```
 
-All commands require `--network` (opt-in for safety) and `--user-agent` (Wikimedia API requirement).
+API commands require `--network` (opt-in for safety) and `--user-agent` (Wikimedia API requirement).
 
 ## Core Commands
 
 ```bash
 # Entities: get data or statements for any Q/P/L ID
-wsearch entity get Q42                    # Get item
-wsearch entity get P31                    # Get property
-wsearch entity statements Q42             # Get just the statements
+wsearch --network --user-agent "MyApp/1.0" entity get Q42
+wsearch --network --user-agent "MyApp/1.0" entity get P31
+wsearch --network --user-agent "MyApp/1.0" entity statements Q42
 
 # SPARQL: query with multiple output formats
-wsearch sparql query --file query.rq --format json   # JSON results
-wsearch sparql query --file query.rq --format csv    # For spreadsheets
-wsearch sparql query --file query.rq --format tsv    # For processing
+wsearch --network --user-agent "MyApp/1.0" sparql query --file query.rq --format json
+wsearch --network --user-agent "MyApp/1.0" sparql query --file query.rq --format csv
+wsearch --network --user-agent "MyApp/1.0" sparql query --file query.rq --format tsv
 
 # Search: find entities by name
-wsearch action search --query "New York" --language en --limit 10
+wsearch --network --user-agent "MyApp/1.0" action search --query "New York" --language en --limit 10
 
 # Raw requests: full API access when you need it
-wsearch raw request GET /entities/items/Q42
+wsearch --network --user-agent "MyApp/1.0" raw request GET /entities/items/Q42
 
 # Configuration: set defaults so flags are optional
 wsearch config set user-agent "MyApp/1.0"

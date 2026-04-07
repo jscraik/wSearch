@@ -37,7 +37,7 @@ The wSearch CLI is designed for:
 ### Required Inputs (per command)
 | Command | Required | Validation |
 |---------|----------|------------|
-| `entity get` | `--network`, `--user-agent`, `id` (Q/P/L format) | Regex: `^[QPL]\d+$` |
+| `entity get` | `--network`, `--user-agent`, `id` (Q/P/L format) | Regex: `^[QPL]\d+$` (strict); with `--agent`: flexible (`q42`, `q-42`, `q_42` normalized to `Q42`) |
 | `sparql query` | `--network`, `--user-agent`, query (via --query, --file, or stdin) | SPARQL syntax server-side |
 | `action search` | `--network`, `--user-agent`, `--query` | Non-empty string |
 | `raw request` | `--network`, `--user-agent`, `method`, `path` | Path must start with `/`, no traversal |
@@ -129,6 +129,7 @@ Commands:
 |------|------|---------|----------|-------------|
 | `--network` | boolean | false | For API calls | Enable network access |
 | `--user-agent` | string | - | For API calls | User-Agent header (or `WIKI_USER_AGENT`) |
+| `--agent` | boolean | false | No | Agent mode: flexible parsing, detailed errors |
 | `--auth` | boolean | false | No | Use stored OAuth token |
 | `--json` | boolean | false | No | Output JSON envelope |
 | `--plain` | boolean | false | No | Output plain text |
