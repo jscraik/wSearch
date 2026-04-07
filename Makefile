@@ -23,21 +23,21 @@ hooks: ## Setup git hooks
 # === Development ===
 
 dev: ## Start development server
-	npm dev
+	npm run dev
 
 build: ## Build for production
-	npm build
+	npm run build
 
 # === Quality ===
 
 lint: ## Run linter
-	npm lint
+	npm run lint:types
 
 fmt: ## Format code
 	npm fmt
 
 typecheck: ## Run TypeScript type checking
-	npm typecheck
+	npm run lint:types
 
 test: ## Run tests
 	npm test
