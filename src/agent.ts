@@ -75,30 +75,37 @@ interface IntentPattern {
 
 const INTENT_PATTERNS: IntentPattern[] = [
   // "wsearch get Q42" -> "wsearch entity get Q42"
+  // Also handles q-42, q_42 formats
   {
-    pattern: /^\s*(?:wsearch\s+)?(get|fetch|show)\s+([QPL]\d+)/i,
+    pattern: /^\s*(?:wsearch\s+)?(get|fetch|show)\s+([qpl][-_]?\d+)/i,
     command: "entity get",
     transform: (m) => {
       const id = m[2];
       if (!id) return ["entity", "get", "Q42"];
-      return ["entity", "get", id.toUpperCase()];
+      // Normalize: remove separators and uppercase
+      const normalizedId = id.replace(/[-_]/g, "").toUpperCase();
+      return ["entity", "get", normalizedId];
     },
     description: "Fetch entity by ID"
   },
   // "wsearch statements Q42" -> "wsearch entity statements Q42"
+  // Also handles q-42, q_42 formats
   {
-    pattern: /^\s*(?:wsearch\s+)?(statements|props|properties)\s+([QPL]\d+)/i,
+    pattern: /^\s*(?:wsearch\s+)?(statements|props|properties)\s+([qpl][-_]?\d+)/i,
     command: "entity statements",
     transform: (m) => {
       const id = m[2];
       if (!id) return ["entity", "statements", "Q42"];
-      return ["entity", "statements", id.toUpperCase()];
+      // Normalize: remove separators and uppercase
+      const normalizedId = id.replace(/[-_]/g, "").toUpperCase();
+      return ["entity", "statements", normalizedId];
     },
     description: "Fetch entity statements"
   },
   // "wsearch search Paris" -> "wsearch action search --query Paris"
+  // Stops at first flag to avoid swallowing flags
   {
-    pattern: /^\s*(?:wsearch\s+)?search\s+(.+)$/i,
+    pattern: /^\s*(?:wsearch\s+)?search\s+([^-]+?)(?:\s+--|$)/i,
     command: "action search",
     transform: (m) => {
       const query = m[1];
@@ -428,35 +435,9 @@ export function normalizeEntityId(input: string): string | null {
  * Try to fix common flag ordering issues
  */
 export function fixFlagOrder(args: string[]): string[] {
-  const flags: string[] = [];
-  const positional: string[] = [];
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (!arg) continue;
-
-    if (arg.startsWith("--") || (arg.startsWith("-") && arg.length > 1 && !arg.startsWith("- "))) {
-      // It's a flag (but not a negative number)
-      if (/^-\d+$/.test(arg)) {
-        positional.push(arg);
-      } else {
-        // Check if next arg is a value for this flag (not a flag itself)
-        const nextArg = args[i + 1];
-        if (nextArg && !nextArg.startsWith("-")) {
-          flags.push(arg);
-          flags.push(nextArg);
-          i++; // Skip the value in next iteration
-        } else {
-          flags.push(arg);
-        }
-      }
-    } else {
-      positional.push(arg);
-    }
-  }
-
-  // Global flags first, then positional
-  return [...flags, ...positional];
+  // Do not reorder tokens blindly; preserve caller intent.
+  // Agent mode accepts commands as-written.
+  return [...args];
 }
 
 /**
