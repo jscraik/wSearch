@@ -428,7 +428,6 @@ export function normalizeEntityId(input: string): string | null {
  * Try to fix common flag ordering issues
  */
 export function fixFlagOrder(args: string[]): string[] {
-  const result: string[] = [];
   const flags: string[] = [];
   const positional: string[] = [];
   
