@@ -9,7 +9,7 @@ import { readFile, readStdin, promptHidden, promptText } from "./io.js";
 import { decryptToken, encryptToken } from "./crypto.js";
 import { getConfigPath, loadConfig, removeCredentials, saveConfig, saveCredentials, loadCredentials } from "./config.js";
 import { CliError } from "./cli-errors.js";
-import { getErrorHelp, formatAgentError } from "./agent.js";
+import { getErrorHelp, formatAgentError, parseAgentIntent, normalizeEntityId, suggestCommand } from "./agent.js";
 
 const DEFAULT_API_URL = "https://www.wikidata.org/w/rest.php/wikibase/v1";
 const DEFAULT_ACTION_URL = "https://www.wikidata.org/w/api.php";
@@ -704,7 +704,33 @@ try {
       : new CliError("Invalid environment configuration. Fix and retry.", 2, "E_VALIDATION");
 }
 const mergedDefaults: Partial<CliGlobals> = { ...configDefaults, ...envOverrides };
-const cli = yargs(hideBin(process.argv));
+
+// Agent mode: pre-parse argv to apply intent recognition and normalizations
+const rawArgv = hideBin(process.argv);
+let processedArgv = rawArgv;
+if (rawArgv.includes("--agent")) {
+  const intentResult = parseAgentIntent(rawArgv);
+  if (intentResult.type === "success") {
+    processedArgv = intentResult.normalized;
+    // Apply entity ID normalization to positional arguments
+    processedArgv = processedArgv.map((arg, i) => {
+      // Skip flags and their values
+      if (arg.startsWith("-")) return arg;
+      // Try to normalize entity IDs
+      const normalized = normalizeEntityId(arg);
+      if (normalized) return normalized;
+      // Try fuzzy command matching for the first positional
+      if (i === 0 || (i > 0 && processedArgv[i - 1]?.startsWith("-"))) {
+        const suggestions = suggestCommand(arg);
+        if (suggestions.length > 0) {
+          return suggestions[0]!;
+        }
+      }
+      return arg;
+    });
+  }
+}
+const cli = yargs(processedArgv);
 
 let lastKnownArgs: Partial<CliGlobals> = {};
 
@@ -787,6 +813,7 @@ function extractPositionalsFromArgv(argv: string[]): string[] {
     "--no-color",
     "--print-request",
     "--passphrase-stdin",
+    "--agent",
     "--token-stdin",
     "--help",
     "--version"
@@ -889,6 +916,7 @@ function isHelpLikeInvocation(argv: string[]): boolean {
     "--no-color",
     "--print-request",
     "--passphrase-stdin",
+    "--agent",
   ]);
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];

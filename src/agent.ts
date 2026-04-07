@@ -430,20 +430,31 @@ export function normalizeEntityId(input: string): string | null {
 export function fixFlagOrder(args: string[]): string[] {
   const flags: string[] = [];
   const positional: string[] = [];
-  
-  for (const arg of args) {
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (!arg) continue;
+
     if (arg.startsWith("--") || (arg.startsWith("-") && arg.length > 1 && !arg.startsWith("- "))) {
       // It's a flag (but not a negative number)
       if (/^-\d+$/.test(arg)) {
         positional.push(arg);
       } else {
-        flags.push(arg);
+        // Check if next arg is a value for this flag (not a flag itself)
+        const nextArg = args[i + 1];
+        if (nextArg && !nextArg.startsWith("-")) {
+          flags.push(arg);
+          flags.push(nextArg);
+          i++; // Skip the value in next iteration
+        } else {
+          flags.push(arg);
+        }
       }
     } else {
       positional.push(arg);
     }
   }
-  
+
   // Global flags first, then positional
   return [...flags, ...positional];
 }

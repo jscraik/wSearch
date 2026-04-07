@@ -179,11 +179,11 @@ fi
 
 ```bash
 # Wrong:
-wsearch entity get Q42
+wsearch --user-agent "Agent/1.0" entity get Q42
 # Error: Network access is disabled. Re-run with --network.
 
 # Right:
-wsearch --network entity get Q42
+wsearch --network --user-agent "Agent/1.0" entity get Q42
 ```
 
 ### Missing User-Agent
@@ -205,11 +205,11 @@ wsearch --network entity get Q42  # Now works without --user-agent
 
 ```bash
 # Wrong:
-wsearch --network entity get 42
+wsearch --network --user-agent "Agent/1.0" entity get 42
 # Error: Invalid entity id "42". Expected Q*, P*, or L* id format.
 
 # Right:
-wsearch --network entity get Q42
+wsearch --network --user-agent "Agent/1.0" entity get Q42
 ```
 
 ### Authentication Issues
@@ -221,8 +221,8 @@ wsearch auth status
 # If no token stored:
 wsearch auth login --token-file ./token.txt
 
-# Then use auth flag
-wsearch --network --auth entity get Q42
+# Then use auth flag (assumes user-agent configured)
+wsearch --network --auth --user-agent "Agent/1.0" entity get Q42
 ```
 
 ## SPARQL Best Practices
