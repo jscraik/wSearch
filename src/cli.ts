@@ -402,14 +402,16 @@ function resolveEnvVarName(optionFlag: string, providedName: string | undefined,
   return { name: normalized, explicit: true };
 }
 
-function assertEntityId(id: string): string {
+function assertEntityId(id: string, agent?: boolean): string {
   const trimmed = id.trim();
-  // Support flexible formats in agent mode: q42, Q42, q-42, etc.
-  const flexibleMatch = trimmed.match(/^([qpl])[\s\-._]*([\d]+)$/i);
-  if (flexibleMatch?.[1] && flexibleMatch?.[2]) {
-    return flexibleMatch[1].toUpperCase() + flexibleMatch[2];
+  // In agent mode: support flexible formats like q42, q-42, q_42
+  if (agent) {
+    const flexibleMatch = trimmed.match(/^([qpl])[\s\-._]*([\d]+)$/i);
+    if (flexibleMatch?.[1] && flexibleMatch?.[2]) {
+      return flexibleMatch[1].toUpperCase() + flexibleMatch[2];
+    }
   }
-  // Strict format check
+  // Strict format check for non-agent mode
   if (!/^[QPL]\d+$/.test(trimmed.toUpperCase())) {
     throw new CliError(`Invalid entity id "${id}". Expected Q*, P*, or L* id format.`, 2, "E_USAGE");
   }
@@ -954,18 +956,21 @@ function emitUnhandledCliError(error: unknown): never {
       ? error
       : new CliError(error instanceof Error ? error.message : "Unexpected error", 1, "E_INTERNAL");
   const { mode, output, requestId, agent } = resolveErrorContext();
-  if (agent) {
-    const help = getErrorHelp(resolved.code, resolved.message);
-    process.stderr.write(`${formatAgentError(help, true)}\n`);
-    process.exit(resolved.exitCode);
-  }
+
+  // Always respect JSON mode for consistent machine parsing
   if (mode === "json") {
+    let errorMessage = resolved.message;
+    if (agent) {
+      const help = getErrorHelp(resolved.code, resolved.message);
+      errorMessage = formatAgentError(help, true);
+    }
+    const errors = [{ message: errorMessage, code: resolved.code }];
     const payload = envelope(
       "wiki.error.v1",
       resolved.message,
       "error",
       null,
-      [{ message: resolved.message, code: resolved.code }],
+      errors,
       requestId
     );
     try {
@@ -975,6 +980,14 @@ function emitUnhandledCliError(error: unknown): never {
     }
     process.exit(resolved.exitCode);
   }
+
+  // Non-JSON mode: agent formatting or plain text
+  if (agent) {
+    const help = getErrorHelp(resolved.code, resolved.message);
+    process.stderr.write(`${formatAgentError(help, true)}\n`);
+    process.exit(resolved.exitCode);
+  }
+
   process.stderr.write(`${resolved.message}\n`);
   process.exit(resolved.exitCode);
 }
@@ -1279,7 +1292,7 @@ cli
           () => {},
           async (args: Arguments) => {
             const globals = args as unknown as CliGlobals & { id: string };
-            const id = assertEntityId(globals.id);
+            const id = assertEntityId(globals.id, globals.agent);
             const preview = Boolean(globals.printRequest);
             if (!preview) {
               requireNetwork(globals);
@@ -1313,7 +1326,7 @@ cli
           () => {},
           async (args: Arguments) => {
             const globals = args as unknown as CliGlobals & { id: string };
-            const id = assertEntityId(globals.id);
+            const id = assertEntityId(globals.id, globals.agent);
             const preview = Boolean(globals.printRequest);
             if (!preview) {
               requireNetwork(globals);
