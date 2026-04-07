@@ -74,10 +74,10 @@ interface IntentPattern {
 }
 
 const INTENT_PATTERNS: IntentPattern[] = [
-  // "wsearch get Q42" -> "wsearch entity get Q42"
+  // "wsearch get Q42" or "wsearch --agent get Q42" -> "entity get Q42"
   // Also handles q-42, q_42 formats
   {
-    pattern: /^\s*(?:wsearch\s+)?(get|fetch|show)\s+([qpl][-_]?\d+)/i,
+    pattern: /(?:^|\s)(get|fetch|show)\s+([qpl][-_]?\d+)/i,
     command: "entity get",
     transform: (m) => {
       const id = m[2];
@@ -88,10 +88,10 @@ const INTENT_PATTERNS: IntentPattern[] = [
     },
     description: "Fetch entity by ID"
   },
-  // "wsearch statements Q42" -> "wsearch entity statements Q42"
+  // "wsearch statements Q42" or "wsearch --agent statements Q42" -> "entity statements Q42"
   // Also handles q-42, q_42 formats
   {
-    pattern: /^\s*(?:wsearch\s+)?(statements|props|properties)\s+([qpl][-_]?\d+)/i,
+    pattern: /(?:^|\s)(statements|props|properties)\s+([qpl][-_]?\d+)/i,
     command: "entity statements",
     transform: (m) => {
       const id = m[2];
@@ -102,10 +102,10 @@ const INTENT_PATTERNS: IntentPattern[] = [
     },
     description: "Fetch entity statements"
   },
-  // "wsearch search Paris" -> "wsearch action search --query Paris"
+  // "wsearch search Paris" -> "action search --query Paris"
   // Stops at first flag to avoid swallowing flags
   {
-    pattern: /^\s*(?:wsearch\s+)?search\s+([^-]+?)(?:\s+--|$)/i,
+    pattern: /(?:^|\s)search\s+([^-]+?)(?:\s+--|$)/i,
     command: "action search",
     transform: (m) => {
       const query = m[1];
@@ -131,26 +131,69 @@ const INTENT_PATTERNS: IntentPattern[] = [
  * Try to parse agent intent from raw command arguments
  */
 export function parseAgentIntent(args: string[]): IntentResult {
+  // First check if this already looks like a valid command structure
+  // (has known command at the start after optional flags)
+  const knownCommands = ["entity", "auth", "config", "sparql", "action", "raw", "doctor", "help", "check-environment", "risk-policy-gate", "review-gate", "evidence-verify", "remediate"];
+  // Flags that take values - need to skip their values when finding first command
+  const flagsWithValues = new Set([
+    "--output", "-o", "--request-id", "--passphrase-file", "--passphrase-env",
+    "--user-agent", "--api-url", "--action-url", "--sparql-url",
+    "--timeout", "--retries", "--retry-backoff", "--token-file", "--token-env"
+  ]);
+  // Find first non-flag, properly skipping option values
+  let firstNonFlag: string | undefined;
+  let skipNext = false;
+  for (const arg of args) {
+    if (skipNext) {
+      skipNext = false;
+      continue;
+    }
+    if (arg.startsWith("-")) {
+      if (flagsWithValues.has(arg)) {
+        skipNext = true;
+      }
+      continue;
+    }
+    firstNonFlag = arg;
+    break;
+  }
+  if (firstNonFlag && knownCommands.includes(firstNonFlag.toLowerCase())) {
+    // Already has a valid command, just normalize flag aliases
+    const normalizedArgs = [...args];
+    let note: string | undefined;
+    for (let i = 0; i < normalizedArgs.length; i++) {
+      const arg = normalizedArgs[i];
+      if (arg && (arg.startsWith("--") || arg.startsWith("-"))) {
+        const normalized = FLAG_ALIASES[arg.toLowerCase()];
+        if (normalized && normalized !== arg) {
+          normalizedArgs[i] = normalized;
+          note = `Normalized flag "${arg}" to "${normalized}". Use the standard form in the future.`;
+        }
+      }
+    }
+    const result: IntentResult = { type: "success", normalized: normalizedArgs };
+    if (note) result.note = note;
+    return result;
+  }
+  
   const joined = args.join(" ");
   
-  // Check for explicit intent patterns first
+  // Check for explicit intent patterns (shorthand commands)
   for (const { pattern, transform, command } of INTENT_PATTERNS) {
     const match = joined.match(pattern);
     if (match?.[0]) {
-      const normalized = transform(match);
+      const transformed = transform(match);
       return {
         type: "success",
-        normalized,
+        normalized: transformed,
         note: `Corrected "${command}" command syntax. Use \`wsearch entity get <id>\` format for clarity.`,
       };
     }
   }
   
-  // Try normalizing subcommands
+  // Just normalize flag aliases
   const normalizedArgs = [...args];
   let note: string | undefined;
-  
-  // Normalize known flag typos
   for (let i = 0; i < normalizedArgs.length; i++) {
     const arg = normalizedArgs[i];
     if (arg && (arg.startsWith("--") || arg.startsWith("-"))) {
@@ -162,11 +205,8 @@ export function parseAgentIntent(args: string[]): IntentResult {
     }
   }
   
-  // Return with note only if it's defined
   const result: IntentResult = { type: "success", normalized: normalizedArgs };
-  if (note) {
-    result.note = note;
-  }
+  if (note) result.note = note;
   return result;
 }
 
@@ -191,12 +231,12 @@ export function getErrorHelp(
           context: "Q42 = Douglas Adams",
         },
         {
-          command: "wsearch --network --user-agent \"MyApp/1.0\" entity get P31",
+          command: "wsearch --network entity get P31",
           description: "Get property by P-id",
           context: "P31 = instance of",
         },
         {
-          command: "wsearch --network --user-agent \"MyApp/1.0\" entity get L123",
+          command: "wsearch --network entity get L123",
           description: "Get lexeme by L-id",
           context: "Lexeme for dictionary entries",
         },
@@ -211,12 +251,12 @@ export function getErrorHelp(
       likelyIntent: "Make a raw API request",
       examples: [
         {
-          command: "wsearch --network --user-agent \"MyApp/1.0\" raw request GET /entities/items/Q42",
+          command: "wsearch --network raw request GET /entities/items/Q42",
           description: "Get entity via REST",
           context: "Direct API access",
         },
         {
-          command: "wsearch --network --user-agent \"MyApp/1.0\" raw request GET /entities/properties/P31",
+          command: "wsearch --network raw request GET /entities/properties/P31",
           description: "Get property via REST",
           context: "Property lookup",
         },
@@ -301,17 +341,17 @@ export function getErrorHelp(
       likelyIntent: "Run a SPARQL query",
       examples: [
         {
-          command: "wsearch --network --user-agent \"MyApp/1.0\" sparql query --file query.rq",
+          command: "wsearch --network sparql query --file query.rq",
           description: "Query from file",
           context: "Recommended for complex queries",
         },
         {
-          command: "wsearch --network --user-agent \"MyApp/1.0\" sparql query --query 'SELECT * WHERE { ?s ?p ?o } LIMIT 10'",
+          command: "wsearch --network sparql query --query 'SELECT * WHERE { ?s ?p ?o } LIMIT 10'",
           description: "Inline query",
           context: "For simple queries",
         },
         {
-          command: "cat query.rq | wsearch --network --user-agent \"MyApp/1.0\" sparql query",
+          command: "cat query.rq | wsearch --network sparql query",
           description: "Query via stdin",
           context: "Pipeline-friendly",
         },
