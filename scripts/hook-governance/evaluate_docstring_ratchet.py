@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -44,13 +45,42 @@ def main() -> int:
     metrics_path = Path(args.metrics).resolve()
     out_path = Path(args.out).resolve()
 
-    classification_doc = _read_json(classification_path)
-    metrics_doc = _read_json(metrics_path)
+    try:
+        classification_doc = _read_json(classification_path)
+    except FileNotFoundError as e:
+        print(f"Error: Classification file not found: {classification_path}", file=sys.stderr)
+        print(f"  Original error: {e}", file=sys.stderr)
+        return 1
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in classification file: {classification_path}", file=sys.stderr)
+        print(f"  Original error: {e}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"Error: Failed to read classification file: {classification_path}", file=sys.stderr)
+        print(f"  Original error: {e}", file=sys.stderr)
+        return 1
+
+    try:
+        metrics_doc = _read_json(metrics_path)
+    except FileNotFoundError as e:
+        print(f"Error: Metrics file not found: {metrics_path}", file=sys.stderr)
+        print(f"  Original error: {e}", file=sys.stderr)
+        return 1
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in metrics file: {metrics_path}", file=sys.stderr)
+        print(f"  Original error: {e}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"Error: Failed to read metrics file: {metrics_path}", file=sys.stderr)
+        print(f"  Original error: {e}", file=sys.stderr)
+        return 1
 
     baseline = _to_float(metrics_doc.get("baseline_coverage"), default=0.0)
     current = _to_float(metrics_doc.get("current_coverage"), default=0.0)
     delta = current - baseline
-    passing = delta >= 0
+    # Use epsilon tolerance to handle floating-point precision issues near boundaries
+    eps = 1e-9
+    passing = delta >= -eps
 
     report = {
         "generated_at": datetime.now(UTC).isoformat(),

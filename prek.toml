@@ -25,7 +25,7 @@ stages = ["pre-push"]
 [[repos.hooks]]
 id = "hooks-commit-msg"
 name = "hooks-commit-msg"
-entry = "bash -lc 'make hooks-commit-msg HOOK_COMMIT_MSG_FILE=\"$1\"' --"
+entry = "bash -c 'make hooks-commit-msg HOOK_COMMIT_MSG_FILE=\"$1\"' --"
 language = "system"
 pass_filenames = true
 stages = ["commit-msg"]

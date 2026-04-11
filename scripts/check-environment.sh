@@ -158,7 +158,7 @@ tool_to_bin_entry() {
 }
 
 for bin_entry in "${REQUIRED_BINS[@]}"; do
-    check_bin_entry "$bin_entry"
+    check_bin_entry "$bin_entry" || exit 1
 done
 
 if [ "${#MISE_TOOLS[@]}" -eq 0 ]; then
@@ -185,6 +185,7 @@ for required_action in "${REQUIRED_ACTIONS[@]}"; do
 done
 
 generated_tooling_doc="$(mktemp)"
+trap 'rm -f "$generated_tooling_doc"' EXIT
 python3 "$DOC_RENDERER_PATH" \
     --repo-root "$REPO_ROOT" \
     --requirements "$TOOLING_REQUIREMENTS_PATH" \
@@ -201,10 +202,8 @@ fi
 if [ ! -f "$TOOLING_DOC_PATH" ] || ! cmp -s "$generated_tooling_doc" "$TOOLING_DOC_PATH"; then
     echo "Tooling inventory is missing or out of date: $TOOLING_DOC_PATH"
     echo "Run: bash scripts/check-environment.sh --write-tooling-doc"
-    rm -f "$generated_tooling_doc"
     exit 1
 fi
-rm -f "$generated_tooling_doc"
 
 # Prefer legacy `check-environment` when present.
 if ralph --help 2>/dev/null | grep -q "check-environment"; then

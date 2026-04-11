@@ -11,7 +11,7 @@ printf '%s\n' '[codex] setup: /Users/jamiecraik/dev/wsearch'
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
 
 if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)" >/dev/null 2>&1 || true
+  eval "$(mise activate bash)" >/dev/null 2>&1
 fi
 
 missing_tools=0
@@ -26,34 +26,26 @@ require_tool() {
 }
 
 require_tool git "install Git and ensure it is on PATH"
-require_tool rg "install ripgrep (rg)"
-require_tool jq "install jq"
-if ! command -v fd >/dev/null 2>&1 && ! command -v fdfind >/dev/null 2>&1; then
-  echo "[codex] missing required tool: fd (or fdfind)"
-  missing_tools=1
-fi
+require_tool mise "install mise runtime manager"
 require_tool node "install Node.js runtime"
-if ! command -v pnpm >/dev/null 2>&1 && ! command -v corepack >/dev/null 2>&1 && [ ! -x /opt/homebrew/bin/pnpm ]; then
-  echo "[codex] missing required tool: pnpm (or corepack with pnpm support)"
+require_tool npm "install npm and ensure it is on PATH"
+if ! command -v python3 >/dev/null 2>&1 && ! command -v python >/dev/null 2>&1; then
+  echo "[codex] missing required tool: python3|python"
   missing_tools=1
 fi
-require_tool python3 "install Python 3 runtime"
+require_tool ralph "install ralph-gold"
 require_tool uv "install uv package manager"
-require_tool rustup "install rustup toolchain manager"
-require_tool rustc "install Rust compiler (rustc)"
-require_tool cargo "install Rust toolchain (cargo)"
-require_tool npm "install npm and ensure it is on PATH"
 
 if [ "$missing_tools" -ne 0 ]; then
   echo "[codex] tooling check failed; install missing tools from tooling.md / mise before continuing."
   exit 1
 fi
-bootstrap_node_tools() {
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
 
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)" >/dev/null 2>&1 || true
-fi
+bootstrap_node_tools() {
+  export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
+  if command -v mise >/dev/null 2>&1; then
+    eval "$(mise activate bash)" >/dev/null 2>&1
+  fi
 }
 
 run_node_pm() {
@@ -110,18 +102,7 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-bootstrap_node_tools() {
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
-
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)" >/dev/null 2>&1 || true
-fi
-}
-
-run_node_pm() {
-  bootstrap_node_tools
-  npm "$@"
-}
+source <(declare -f bootstrap_node_tools run_node_pm)
 
 run_node_pm ci || run_node_pm install
 '''
@@ -132,18 +113,7 @@ icon = "debug"
 command = '''
 set -euo pipefail
 
-bootstrap_node_tools() {
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
-
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)" >/dev/null 2>&1 || true
-fi
-}
-
-run_node_pm() {
-  bootstrap_node_tools
-  npm "$@"
-}
+source <(declare -f bootstrap_node_tools run_node_pm)
 
 run_node_pm run typecheck
 '''
@@ -154,18 +124,7 @@ icon = "debug"
 command = '''
 set -euo pipefail
 
-bootstrap_node_tools() {
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
-
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)" >/dev/null 2>&1 || true
-fi
-}
-
-run_node_pm() {
-  bootstrap_node_tools
-  npm "$@"
-}
+source <(declare -f bootstrap_node_tools run_node_pm)
 
 run_node_pm run check
 '''
@@ -176,18 +135,7 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-bootstrap_node_tools() {
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
-
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)" >/dev/null 2>&1 || true
-fi
-}
-
-run_node_pm() {
-  bootstrap_node_tools
-  npm "$@"
-}
+source <(declare -f bootstrap_node_tools run_node_pm)
 
 run_node_pm run lint
 '''
@@ -198,18 +146,7 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-bootstrap_node_tools() {
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
-
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)" >/dev/null 2>&1 || true
-fi
-}
-
-run_node_pm() {
-  bootstrap_node_tools
-  npm "$@"
-}
+source <(declare -f bootstrap_node_tools run_node_pm)
 
 run_node_pm run build
 '''
@@ -220,18 +157,7 @@ icon = "test"
 command = '''
 set -euo pipefail
 
-bootstrap_node_tools() {
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
-
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)" >/dev/null 2>&1 || true
-fi
-}
-
-run_node_pm() {
-  bootstrap_node_tools
-  npm "$@"
-}
+source <(declare -f bootstrap_node_tools run_node_pm)
 
 run_node_pm test
 '''
@@ -242,18 +168,7 @@ icon = "run"
 command = '''
 set -euo pipefail
 
-bootstrap_node_tools() {
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
-
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)" >/dev/null 2>&1 || true
-fi
-}
-
-run_node_pm() {
-  bootstrap_node_tools
-  npm "$@"
-}
+source <(declare -f bootstrap_node_tools run_node_pm)
 
 if command -v portless >/dev/null 2>&1; then
   bootstrap_node_tools

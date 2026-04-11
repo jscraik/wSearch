@@ -28,6 +28,10 @@ export type ErrorHelp = {
 };
 
 // Common flag typos and normalizations
+// TODO: Add unit tests that assert FLAG_ALIASES normalization inside parseAgentIntent:
+//   - Test that -n, --net, --online all become --network
+//   - Test that -ua becomes --user-agent
+//   - Test that command and positional args are preserved after normalization
 const FLAG_ALIASES: Record<string, string> = {
   // Network/security
   "--net": "--network",

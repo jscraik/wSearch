@@ -1732,8 +1732,8 @@ cli
       const globals = args as unknown as CliGlobals & { mode?: string; findings?: string; contract?: string };
       outputResult(globals, "wiki.remediate.v1", "Remediation completed", { status: "completed", mode: globals.mode || "dry-run", findings: globals.findings, contract: globals.contract });
     }
-)
-    .completion("completion", "Generate shell completion script")
+  )
+  .completion("completion", "Generate shell completion script")
   .strict()
   .recommendCommands()
   .demandCommand(1)
