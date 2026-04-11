@@ -1,0 +1,21 @@
+{
+  "required_bins": [
+    "git",
+    "mise",
+    "node",
+    "npm",
+    "python3|python",
+    "ralph",
+    "uv"
+  ],
+  "required_actions": [
+    "Tooling",
+    "Install deps",
+    "Typecheck",
+    "Check",
+    "Lint",
+    "Build",
+    "Run tests",
+    "Run app"
+  ]
+}
