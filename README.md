@@ -95,10 +95,10 @@ wsearch --print-request entity get Q42    # Preview without sending
 
 ```bash
 # JSON: structured, schema-versioned, ideal for automation
-wsearch --network --user-agent "MyApp/1.0" --json entity get Q42 | jq .data.labels.en.value
+wsearch --network --json entity get Q42 | jq .data.labels.en.value
 
 # Plain: pipe-friendly, predictable
-wsearch --network --user-agent "MyApp/1.0" --plain entity get Q42 | grep -o Q[0-9]*
+wsearch --network --plain entity get Q42 | grep -o Q[0-9]*
 ```
 
 JSON output includes:

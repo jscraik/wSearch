@@ -73,39 +73,31 @@ interface IntentPattern {
   description: string;
 }
 
-// Shared list of all known commands for agent mode
-export const KNOWN_COMMANDS = [
-  "entity", "auth", "config", "sparql", "action", "raw", "doctor", "help",
-  "check-environment", "risk-policy-gate", "review-gate", "evidence-verify", "remediate"
-];
-
 const INTENT_PATTERNS: IntentPattern[] = [
   // "wsearch get Q42" or "wsearch --agent get Q42" -> "entity get Q42"
-  // Also handles q-42, q_42, q.42, q 42 formats (matches normalizeEntityId)
-  // Note: \b ensures full token match, rejecting malformed IDs like "q42foo"
+  // Also handles q-42, q_42 formats
   {
-    pattern: /(?:^|\s)(get|fetch|show)\s+([qpl][\s\-._]*\d+)\b/i,
+    pattern: /(?:^|\s)(get|fetch|show)\s+([qpl][-_]?\d+)/i,
     command: "entity get",
     transform: (m) => {
       const id = m[2];
       if (!id) return ["entity", "get", "Q42"];
-      // Normalize: remove separators and uppercase (matches normalizeEntityId)
-      const normalizedId = id.replace(/[\s\-._]/g, "").toUpperCase();
+      // Normalize: remove separators and uppercase
+      const normalizedId = id.replace(/[-_]/g, "").toUpperCase();
       return ["entity", "get", normalizedId];
     },
     description: "Fetch entity by ID"
   },
   // "wsearch statements Q42" or "wsearch --agent statements Q42" -> "entity statements Q42"
-  // Also handles q-42, q_42, q.42, q 42 formats (matches normalizeEntityId)
-  // Note: \b ensures full token match, rejecting malformed IDs like "q42foo"
+  // Also handles q-42, q_42 formats
   {
-    pattern: /(?:^|\s)(statements|props|properties)\s+([qpl][\s\-._]*\d+)\b/i,
+    pattern: /(?:^|\s)(statements|props|properties)\s+([qpl][-_]?\d+)/i,
     command: "entity statements",
     transform: (m) => {
       const id = m[2];
       if (!id) return ["entity", "statements", "Q42"];
-      // Normalize: remove separators and uppercase (matches normalizeEntityId)
-      const normalizedId = id.replace(/[\s\-._]/g, "").toUpperCase();
+      // Normalize: remove separators and uppercase
+      const normalizedId = id.replace(/[-_]/g, "").toUpperCase();
       return ["entity", "statements", normalizedId];
     },
     description: "Fetch entity statements"
@@ -142,6 +134,7 @@ const INTENT_PATTERNS: IntentPattern[] = [
 export function parseAgentIntent(args: string[]): IntentResult {
   // First check if this already looks like a valid command structure
   // (has known command at the start after optional flags)
+  const knownCommands = ["entity", "auth", "config", "sparql", "action", "raw", "doctor", "help", "check-environment", "risk-policy-gate", "review-gate", "evidence-verify", "remediate"];
   // Flags that take values - need to skip their values when finding first command
   const flagsWithValues = new Set([
     "--output", "-o", "--request-id", "--passphrase-file", "--passphrase-env",
@@ -165,7 +158,7 @@ export function parseAgentIntent(args: string[]): IntentResult {
     firstNonFlag = arg;
     break;
   }
-  if (firstNonFlag && KNOWN_COMMANDS.includes(firstNonFlag.toLowerCase())) {
+  if (firstNonFlag && knownCommands.includes(firstNonFlag.toLowerCase())) {
     // Already has a valid command, just normalize flag aliases
     const normalizedArgs = [...args];
     let note: string | undefined;
@@ -190,21 +183,10 @@ export function parseAgentIntent(args: string[]): IntentResult {
   for (const { pattern, transform, command } of INTENT_PATTERNS) {
     const match = joined.match(pattern);
     if (match?.[0]) {
-      const matchedText = match[0];
       const transformed = transform(match);
-      // Preserve flags from the original argv by splicing transformed tokens in place
-      // Find where the matched pattern starts in the joined string
-      const matchStartIndex = joined.indexOf(matchedText);
-      const beforeMatch = matchStartIndex > 0 ? joined.slice(0, matchStartIndex) : "";
-      const afterMatch = joined.slice(matchStartIndex + matchedText.length);
-      // Split before/after into tokens (flags and other content)
-      const tokensBefore = beforeMatch.trim().split(/\s+/).filter(t => t.length > 0);
-      const tokensAfter = afterMatch.trim().split(/\s+/).filter(t => t.length > 0);
-      // Combine: flags before + transformed tokens + flags after
-      const preserved = [...tokensBefore, ...transformed, ...tokensAfter];
       return {
         type: "success",
-        normalized: preserved,
+        normalized: transformed,
         note: `Corrected "${command}" command syntax. Use \`wsearch entity get <id>\` format for clarity.`,
       };
     }
@@ -250,12 +232,12 @@ export function getErrorHelp(
           context: "Q42 = Douglas Adams",
         },
         {
-          command: "wsearch --network --user-agent \"MyApp/1.0\" entity get P31",
+          command: "wsearch --network entity get P31",
           description: "Get property by P-id",
           context: "P31 = instance of",
         },
         {
-          command: "wsearch --network --user-agent \"MyApp/1.0\" entity get L123",
+          command: "wsearch --network entity get L123",
           description: "Get lexeme by L-id",
           context: "Lexeme for dictionary entries",
         },
@@ -284,33 +266,6 @@ export function getErrorHelp(
     };
   }
   
-  // Check User-Agent first (before generic E_POLICY) since UA errors also have E_POLICY code
-  if (errorMessage.includes("User-Agent is required")) {
-    return {
-      message: errorMessage,
-      likelyIntent: "Query Wikidata API",
-      examples: [
-        {
-          command: "wsearch --network --user-agent \"MyApp/1.0 (contact@example.com)\" entity get Q42",
-          description: "Query with User-Agent",
-          context: "Wikimedia API requirement",
-        },
-        {
-          command: "export WIKI_USER_AGENT=\"MyApp/1.0\" && wsearch --network entity get Q42",
-          description: "Set UA via environment",
-          context: "Avoid repeating the flag",
-        },
-        {
-          command: "wsearch config set user-agent \"MyApp/1.0\"",
-          description: "Persist User-Agent",
-          context: "Set once, use always",
-        },
-      ],
-      fixHint: "Wikimedia APIs require a User-Agent. Use --user-agent flag, WIKI_USER_AGENT env var, or `wsearch config set user-agent`.",
-    };
-  }
-
-  // Generic E_POLICY for network access disabled (not User-Agent issues)
   if (errorMessage.includes("Network access is disabled") || errorCode === "E_POLICY") {
     return {
       message: errorMessage,
@@ -328,6 +283,31 @@ export function getErrorHelp(
         },
       ],
       fixHint: "All API calls require --network flag (opt-in for safety). Also set --user-agent for Wikimedia APIs.",
+    };
+  }
+  
+  if (errorMessage.includes("User-Agent is required")) {
+    return {
+      message: errorMessage,
+      likelyIntent: "Query Wikidata API",
+      examples: [
+        {
+          command: "wsearch --network --user-agent \"MyApp/1.0 (contact@example.com)\" entity get Q42",
+          description: "Query with User-Agent",
+          context: "Wikimedia API requirement",
+        },
+        {
+          command: "export WIKI_USER_AGENT=\"MyApp/1.0\" \u0026\u0026 wsearch --network entity get Q42",
+          description: "Set UA via environment",
+          context: "Avoid repeating the flag",
+        },
+        {
+          command: "wsearch config set user-agent \"MyApp/1.0\"",
+          description: "Persist User-Agent",
+          context: "Set once, use always",
+        },
+      ],
+      fixHint: "Wikimedia APIs require a User-Agent. Use --user-agent flag, WIKI_USER_AGENT env var, or `wsearch config set user-agent`.",
     };
   }
   
@@ -501,7 +481,8 @@ export function suggestCommand(attempted: string): string[] {
   const lower = attempted.toLowerCase();
   
   // Fuzzy match to known commands
-  for (const cmd of KNOWN_COMMANDS) {
+  const knownCommands = ["entity", "auth", "config", "sparql", "action", "raw", "doctor", "help"];
+  for (const cmd of knownCommands) {
     if (cmd.startsWith(lower) || lower.startsWith(cmd)) {
       suggestions.push(cmd);
     }

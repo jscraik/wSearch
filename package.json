@@ -67,5 +67,10 @@
     "typescript": "^5.9.3",
     "vitest": "^4.1.2"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "simple-git-hooks": {
+    "pre-commit": "npm run lint:types",
+    "commit-msg": "node scripts/validate-commit-msg.js $1",
+    "pre-push": "npm test"
+  }
 }
