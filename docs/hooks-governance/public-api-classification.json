@@ -1,0 +1,8 @@
+{
+  "apis": [
+    {
+      "name": "wsearch-cli",
+      "public": true
+    }
+  ]
+}

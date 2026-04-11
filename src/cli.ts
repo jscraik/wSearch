@@ -332,6 +332,23 @@ function parseRequestIdFromArgv(argv: string[]): string | undefined {
   return undefined;
 }
 
+// Detect agent mode: --agent, --agent=true (but not --agent=false)
+function isAgentEnabled(argv: string[]): boolean {
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--agent") {
+      // Check if next token is "false" (yargs allows --agent false)
+      const next = argv[i + 1];
+      if (next === "false") return false;
+      return true;
+    }
+    if (arg === "--agent=true") return true;
+    if (arg === "--agent=false") return false;
+    // Don't treat other --agent=* as enabled (must be explicit true)
+  }
+  return false;
+}
+
 function resolveErrorContext(): { mode: "plain" | "json"; output?: string; requestId?: string; agent?: boolean } {
   const rawArgv = hideBin(process.argv);
   const fallback = parseOutputArgsFromArgv(rawArgv);
@@ -344,9 +361,8 @@ function resolveErrorContext(): { mode: "plain" | "json"; output?: string; reque
   const json = hasJsonFlag || (!hasPlainFlag && (lastKnownArgs.json || fallback.json));
   const output = fallback.output ?? lastKnownArgs.output;
 
-  // Detect agent mode: --agent, --agent=true, or --agent=true (yargs formats)
-  const hasAgentFlag = rawArgv.some(a => a === "--agent" || a === "--agent=true" || a.startsWith("--agent="));
-  const agent = Boolean(lastKnownArgs.agent) || hasAgentFlag;
+  // Detect agent mode: --agent, --agent=true (not --agent=false or other values)
+  const agent = Boolean(lastKnownArgs.agent) || isAgentEnabled(rawArgv);
 
   const context: { mode: "plain" | "json"; output?: string; requestId?: string; agent?: boolean } = json
     ? { mode: "json", agent }
@@ -721,18 +737,6 @@ const mergedDefaults: Partial<CliGlobals> = { ...configDefaults, ...envOverrides
 const rawArgv = hideBin(process.argv);
 let processedArgv = rawArgv;
 
-// Detect agent mode: --agent, --agent=true (but not --agent=false)
-// Must check BEFORE any rewriting to preserve opt-in contract
-function isAgentEnabled(argv: string[]): boolean {
-  for (const arg of argv) {
-    if (arg === "--agent") return true;
-    if (arg === "--agent=true") return true;
-    if (arg === "--agent=false") return false;
-    // Don't treat other --agent=* as enabled (must be explicit true)
-  }
-  return false;
-}
-
 const isAgentMode = isAgentEnabled(rawArgv);
 if (isAgentMode) {
   // Only run intent parsing when agent mode is explicitly enabled
@@ -746,7 +750,11 @@ if (isAgentMode) {
       "--user-agent", "--api-url", "--action-url", "--sparql-url",
       "--timeout", "--retries", "--retry-backoff", "--token-file", "--token-env"
     ]);
+    // Entity commands that accept entity IDs as positionals
+    const entitySubCommands = new Set(["get", "statements", "claims", "sitelinks", "aliases", "descriptions", "labels"]);
     let skipNext = false;
+    let foundFirstPositional = false;
+    let currentCommand: string | undefined;
     processedArgv = processedArgv.map((arg, i, arr) => {
       // If we need to skip this token (it's an option value), just return it
       if (skipNext) {
@@ -760,23 +768,21 @@ if (isAgentMode) {
         }
         return arg;
       }
-      // Skip if this is a value for the previous flag
-      if (i > 0 && arr[i - 1]) {
-        const prevArg = arr[i - 1];
-        if (prevArg && prevArg.startsWith("-") && optionsWithValue.has(prevArg)) {
-          return arg;
-        }
-      }
-      // Try to normalize entity IDs
-      const normalized = normalizeEntityId(arg);
-      if (normalized) return normalized;
-      // Only apply fuzzy command matching to the first positional (command position)
-      // NOT to option values
-      if (i === 0) {
+      // Track the command for entity ID scoping
+      if (!foundFirstPositional) {
+        foundFirstPositional = true;
+        currentCommand = arg;
+        // Apply fuzzy command matching to the first positional
         const suggestions = suggestCommand(arg);
         if (suggestions.length > 0) {
           return suggestions[0]!;
         }
+        return arg;
+      }
+      // Only normalize entity IDs for the 'entity' command and its subcommands
+      if (currentCommand === "entity") {
+        const normalized = normalizeEntityId(arg);
+        if (normalized) return normalized;
       }
       return arg;
     });
@@ -1668,9 +1674,14 @@ cli
       const globals = args as unknown as CliGlobals & { contract?: string; attestation?: string };
       const data = { status: "ok", contract: globals.contract, timestamp: new Date().toISOString() };
       if (globals.attestation) {
-        const dir = path.dirname(globals.attestation);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(globals.attestation, JSON.stringify(data, null, 2));
+        try {
+          const dir = path.dirname(globals.attestation);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(globals.attestation, JSON.stringify(data, null, 2));
+        } catch (error) {
+          const detail = error instanceof Error ? error.message : String(error);
+          throw new CliError(`Failed to write attestation to ${globals.attestation}: ${detail}`, 1, "E_IO");
+        }
       }
       outputResult(globals, "wiki.check-environment.v1", "Environment check passed", data);
     }
@@ -1684,8 +1695,53 @@ cli
         .option("files", { type: "string" })
         .option("max-tier", { type: "string", default: "medium" }),
     (args: Arguments) => {
-      const globals = args as unknown as CliGlobals & { files?: string };
-      outputResult(globals, "wiki.risk-policy-gate.v1", "Risk policy gate passed", { status: "passed", maxTier: (args as { maxTier?: string }).maxTier || "medium" });
+      const globals = args as unknown as CliGlobals & { files?: string; maxTier?: string; contract?: string };
+      const contractPath = globals.contract;
+      if (!contractPath) {
+        throw new CliError("Contract is required (--contract)", 2, "E_USAGE");
+      }
+      const maxTier = globals.maxTier || "medium";
+
+      // Validate contract file exists and is readable
+      try {
+        if (!fs.existsSync(contractPath)) {
+          throw new CliError(`Contract file not found: ${contractPath}`, 2, "E_VALIDATION");
+        }
+        const contractContent = fs.readFileSync(contractPath, "utf-8");
+        const contract = JSON.parse(contractContent) as { tiers?: Record<string, { patterns?: string[] }> };
+
+        // Parse changed files
+        const changedFiles = globals.files ? globals.files.split(",").filter(f => f.trim()) : [];
+
+        // Evaluate against policy tiers
+        const tierOrder = ["low", "medium", "high", "critical"];
+        const maxTierIndex = tierOrder.indexOf(maxTier);
+
+        for (const [tierName, tierConfig] of Object.entries(contract.tiers || {})) {
+          const tierIndex = tierOrder.indexOf(tierName);
+          if (tierIndex > maxTierIndex) continue; // Skip tiers above max allowed
+
+          const patterns = tierConfig.patterns || [];
+          for (const file of changedFiles) {
+            for (const pattern of patterns) {
+              const regex = new RegExp(pattern.replace(/\*/g, ".*"));
+              if (regex.test(file)) {
+                throw new CliError(
+                  `Risk policy violation: file "${file}" matches tier "${tierName}" pattern "${pattern}"`,
+                  3,
+                  "E_POLICY"
+                );
+              }
+            }
+          }
+        }
+
+        outputResult(globals, "wiki.risk-policy-gate.v1", "Risk policy gate passed", { status: "passed", maxTier });
+      } catch (error) {
+        if (error instanceof CliError) throw error;
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new CliError(`Risk policy evaluation failed: ${detail}`, 1, "E_INTERNAL");
+      }
     }
   )
   .command(
@@ -1701,9 +1757,138 @@ cli
         .option("check", { type: "string" })
         .option("contract", { type: "string", demandOption: true }),
     async (args: Arguments) => {
-      const globals = args as unknown as CliGlobals;
-      const sha = (args as { sha?: string }).sha || "unknown";
-      outputResult(globals, "wiki.review-gate.v1", "Review gate passed", { status: "passed", sha });
+      const globals = args as unknown as CliGlobals & { token?: string; owner?: string; repo?: string; pr?: number; sha?: string; check?: string; contract: string };
+
+      // Validate required inputs
+      if (!globals.token) {
+        throw new CliError("GitHub token is required (--token)", 2, "E_VALIDATION");
+      }
+      if (!globals.owner || !globals.repo) {
+        throw new CliError("Repository owner and repo are required (--owner, --repo)", 2, "E_VALIDATION");
+      }
+      if (!globals.pr) {
+        throw new CliError("PR number is required (--pr)", 2, "E_VALIDATION");
+      }
+
+      // Read contract
+      let contract: { requiredChecks?: string[]; minApprovals?: number };
+      try {
+        if (!fs.existsSync(globals.contract)) {
+          throw new CliError(`Contract file not found: ${globals.contract}`, 2, "E_VALIDATION");
+        }
+        contract = JSON.parse(fs.readFileSync(globals.contract, "utf-8")) as { requiredChecks?: string[]; minApprovals?: number };
+      } catch (error) {
+        if (error instanceof CliError) throw error;
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new CliError(`Failed to read contract: ${detail}`, 1, "E_INTERNAL");
+      }
+
+      // Fetch PR review status from GitHub API
+      const apiUrl = `https://api.github.com/repos/${globals.owner}/${globals.repo}/pulls/${globals.pr}`;
+      const reviewsUrl = `https://api.github.com/repos/${globals.owner}/${globals.repo}/pulls/${globals.pr}/reviews`;
+
+      try {
+        // Fetch PR details
+        const prResponse = await fetch(apiUrl, {
+          headers: {
+            "Authorization": `Bearer ${globals.token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "wsearch-cli/1.0"
+          }
+        });
+
+        if (!prResponse.ok) {
+          throw new CliError(
+            `GitHub API error: ${prResponse.status} ${prResponse.statusText}`,
+            3,
+            "E_POLICY"
+          );
+        }
+
+        const prData = await prResponse.json() as { head?: { sha?: string }; mergeable_state?: string };
+        const headSha = globals.sha || prData.head?.sha || "unknown";
+
+        // Verify SHA matches if provided
+        if (globals.sha && prData.head?.sha !== globals.sha) {
+          throw new CliError(
+            `SHA mismatch: expected ${globals.sha}, found ${prData.head?.sha}`,
+            3,
+            "E_POLICY"
+          );
+        }
+
+        // Fetch reviews
+        const reviewsResponse = await fetch(reviewsUrl, {
+          headers: {
+            "Authorization": `Bearer ${globals.token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "wsearch-cli/1.0"
+          }
+        });
+
+        if (!reviewsResponse.ok) {
+          throw new CliError(
+            `GitHub API error fetching reviews: ${reviewsResponse.status} ${reviewsResponse.statusText}`,
+            3,
+            "E_POLICY"
+          );
+        }
+
+        const reviews = await reviewsResponse.json() as Array<{ state?: string }>;
+        const approvals = reviews.filter((r: { state?: string }) => r.state === "APPROVED").length;
+        const minApprovals = contract.minApprovals || 1;
+
+        if (approvals < minApprovals) {
+          throw new CliError(
+            `Insufficient approvals: ${approvals} found, ${minApprovals} required`,
+            3,
+            "E_POLICY"
+          );
+        }
+
+        // Check required status checks if specified
+        if (contract.requiredChecks && contract.requiredChecks.length > 0) {
+          const checksUrl = `https://api.github.com/repos/${globals.owner}/${globals.repo}/commits/${headSha}/check-runs`;
+          const checksResponse = await fetch(checksUrl, {
+            headers: {
+              "Authorization": `Bearer ${globals.token}`,
+              "Accept": "application/vnd.github.v3+json",
+              "User-Agent": "wsearch-cli/1.0"
+            }
+          });
+
+          if (!checksResponse.ok) {
+            throw new CliError(
+              `GitHub API error fetching checks: ${checksResponse.status} ${checksResponse.statusText}`,
+              3,
+              "E_POLICY"
+            );
+          }
+
+          const checksData = await checksResponse.json() as { check_runs?: Array<{ name?: string; conclusion?: string }> };
+          const checkRuns = checksData.check_runs || [];
+
+          for (const checkName of contract.requiredChecks) {
+            const checkRun = checkRuns.find((c: { name?: string }) => c.name === checkName);
+            if (!checkRun) {
+              throw new CliError(`Required check not found: ${checkName}`, 3, "E_POLICY");
+            }
+            if (checkRun.conclusion !== "success") {
+              throw new CliError(
+                `Required check failed: ${checkName} (conclusion: ${checkRun.conclusion || "pending"})`,
+                3,
+                "E_POLICY"
+              );
+            }
+          }
+        }
+
+        outputResult(globals, "wiki.review-gate.v1", "Review gate passed", { status: "passed", sha: headSha, approvals });
+      } catch (error) {
+        if (error instanceof CliError) throw error;
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new CliError(`Review gate failed: ${detail}`, 1, "E_INTERNAL");
+      }
     }
   )
   .command(
@@ -1715,9 +1900,95 @@ cli
         .option("files", { type: "string" })
         .option("changed", { type: "string" }),
     (args: Arguments) => {
-      const globals = args as unknown as CliGlobals;
-      const files = (args as { files?: string }).files || "";
-      outputResult(globals, "wiki.evidence-verify.v1", "Evidence verified", { status: "verified", files: files.split(",").filter(Boolean) });
+      const globals = args as unknown as CliGlobals & { files?: string; changed?: string; contract: string };
+
+      // Validate contract file exists
+      try {
+        if (!fs.existsSync(globals.contract)) {
+          throw new CliError(`Contract file not found: ${globals.contract}`, 2, "E_VALIDATION");
+        }
+        const contractContent = fs.readFileSync(globals.contract, "utf-8");
+        const contract = JSON.parse(contractContent) as { evidence?: { required?: string[]; allowedTypes?: string[]; maxSize?: number } };
+
+        // Parse evidence files
+        const evidenceFiles = globals.files ? globals.files.split(",").filter(f => f.trim()) : [];
+        const changedFiles = globals.changed ? globals.changed.split(",").filter(f => f.trim()) : [];
+
+        // Check required evidence files exist
+        const requiredFiles = contract.evidence?.required || [];
+        for (const required of requiredFiles) {
+          if (!evidenceFiles.includes(required)) {
+            throw new CliError(
+              `Missing required evidence file: ${required}`,
+              3,
+              "E_POLICY"
+            );
+          }
+        }
+
+        // Validate each evidence file
+        const allowedTypes = contract.evidence?.allowedTypes || [".json", ".md", ".txt", ".log"];
+        const maxSize = contract.evidence?.maxSize || 10 * 1024 * 1024; // 10MB default
+
+        const verifiedFiles: string[] = [];
+        for (const file of evidenceFiles) {
+          // Check file exists
+          if (!fs.existsSync(file)) {
+            throw new CliError(`Evidence file not found: ${file}`, 3, "E_POLICY");
+          }
+
+          // Check file type
+          const ext = path.extname(file).toLowerCase();
+          if (!allowedTypes.includes(ext)) {
+            throw new CliError(
+              `Evidence file type not allowed: ${file} (type: ${ext}, allowed: ${allowedTypes.join(", ")})`,
+              3,
+              "E_POLICY"
+            );
+          }
+
+          // Check file size
+          const stats = fs.statSync(file);
+          if (stats.size > maxSize) {
+            throw new CliError(
+              `Evidence file too large: ${file} (${stats.size} bytes, max: ${maxSize} bytes)`,
+              3,
+              "E_POLICY"
+            );
+          }
+
+          // Verify file is readable
+          try {
+            fs.accessSync(file, fs.constants.R_OK);
+          } catch {
+            throw new CliError(`Evidence file not readable: ${file}`, 3, "E_POLICY");
+          }
+
+          verifiedFiles.push(file);
+        }
+
+        // Check that all changed files have corresponding evidence if contract requires it
+        if (contract.evidence?.required && changedFiles.length > 0) {
+          const missingEvidence = changedFiles.filter(f => {
+            const baseName = path.basename(f, path.extname(f));
+            return !evidenceFiles.some(e => path.basename(e).startsWith(baseName));
+          });
+          if (missingEvidence.length > 0 && requiredFiles.length === 0) {
+            // Only warn if no specific required files listed
+            console.warn(`Warning: Changed files without evidence: ${missingEvidence.join(", ")}`);
+          }
+        }
+
+        outputResult(globals, "wiki.evidence-verify.v1", "Evidence verified", {
+          status: "verified",
+          files: verifiedFiles,
+          count: verifiedFiles.length
+        });
+      } catch (error) {
+        if (error instanceof CliError) throw error;
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new CliError(`Evidence verification failed: ${detail}`, 1, "E_INTERNAL");
+      }
     }
   )
   .command(

@@ -10,12 +10,9 @@ globs:
   - "!.github/**"
   - "!ai/**"
   - "!.greptile/**"
-  - "!AGENTS.md"
   - "!CHANGELOG.md"
   - "!CLAUDE.md"
   - "!DOC_QA_RESULTS.md"
-  - "!README.md"
-  - "!docs/**"
   - "!references/**"
 
 config:

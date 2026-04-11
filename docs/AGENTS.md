@@ -303,7 +303,7 @@ wsearch --print-request --user-agent "Agent/1.0" entity get Q42
 
 ```bash
 # See detailed request/response info
-wsearch --agent --network --verbose --json entity get Q42
+wsearch --agent --network --verbose --json --user-agent "Agent/1.0" entity get Q42
 ```
 
 ### Doctor Command
