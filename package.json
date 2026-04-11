@@ -32,8 +32,12 @@
     "audit": "npm audit --audit-level=moderate",
     "semgrep": "semgrep scan --config auto",
     "gitleaks": "gitleaks detect --source . --redact",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint:types": "tsc -p tsconfig.json --noEmit",
+    "lint": "npm run lint:types",
+    "check": "npm run lint:types && npm test",
     "lint:docs": "markdownlint-cli2",
+    "docs:lint": "markdownlint-cli2",
     "lint:docs:fix": "markdownlint-cli2 --fix",
     "lint:docs:vale": "vale --config .vale.ini README.md docs references",
     "lint:docs:readability": "python3 scripts/check_readability.py README.md docs references",
@@ -63,7 +67,7 @@
     "typescript": "^5.9.3",
     "vitest": "^4.1.2"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "simple-git-hooks": {
     "pre-commit": "npm run lint:types",
     "commit-msg": "node scripts/validate-commit-msg.js $1",
