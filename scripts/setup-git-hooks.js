@@ -12,7 +12,15 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import {
+	closeSync,
+	constants as fsConstants,
+	existsSync,
+	openSync,
+	readFileSync,
+	readdirSync,
+	writeFileSync,
+} from "node:fs";
 import { resolve } from "node:path";
 
 const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
@@ -24,6 +32,19 @@ const PREK_HOOK_PATCH = [
 	"export PREK_HOME",
 	"",
 ].join("\n");
+
+function writeFileNoFollow(path, content) {
+	/**
+	 * Prevent writing through symlink swaps between initial checks and final write.
+	 * This is required to avoid TOCTOU file-system race issues in CI security scans.
+	 */
+	const fd = openSync(path, fsConstants.O_WRONLY | fsConstants.O_TRUNC | fsConstants.O_NOFOLLOW);
+	try {
+		writeFileSync(fd, content, "utf8");
+	} finally {
+		closeSync(fd);
+	}
+}
 
 function patchInstalledPrekHooks() {
 	const hooksDir = resolve(process.cwd(), ".git/hooks");
@@ -99,7 +120,7 @@ function main() {
 	}
 
 	if (modified) {
-		writeFileSync(PACKAGE_JSON_PATH, `${JSON.stringify(packageJson, null, 2)}\n`);
+		writeFileNoFollow(PACKAGE_JSON_PATH, `${JSON.stringify(packageJson, null, 2)}\n`);
 		console.info("\n✓ package.json updated");
 	}
 
