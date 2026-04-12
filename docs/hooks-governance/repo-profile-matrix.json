@@ -1,0 +1,10 @@
+{
+  "repos": [
+    {
+      "name": "wsearch",
+      "path": ".",
+      "status": "healthy",
+      "stale": false
+    }
+  ]
+}

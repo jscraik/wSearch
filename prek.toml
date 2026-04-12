@@ -1,31 +1,31 @@
-# Prek configuration (Rust-based pre-commit replacement)
-# Install prek: mise install cargo-prek || cargo install prek
+# Prek configuration for wsearch
 # Run: prek install && prek run --all-files
 
-[default_install_hook_types]
-pre_commit = true
+default_install_hook_types = ["pre-commit", "pre-push", "commit-msg"]
 
 [[repos]]
 repo = "local"
 
 [[repos.hooks]]
-id = "lint"
-name = "Lint"
-entry = "npm run lint"
+id = "hooks-pre-commit"
+name = "hooks-pre-commit"
+entry = "make hooks-pre-commit"
 language = "system"
 pass_filenames = false
+stages = ["pre-commit"]
 
 [[repos.hooks]]
-id = "typecheck"
-name = "TypeCheck"
-entry = "npm run typecheck"
-language = "system"
-pass_filenames = false
-
-[[repos.hooks]]
-id = "test"
-name = "Tests"
-entry = "npm run test"
+id = "hooks-pre-push"
+name = "hooks-pre-push"
+entry = "make hooks-pre-push"
 language = "system"
 pass_filenames = false
 stages = ["pre-push"]
+
+[[repos.hooks]]
+id = "hooks-commit-msg"
+name = "hooks-commit-msg"
+entry = "bash -c 'make hooks-commit-msg HOOK_COMMIT_MSG_FILE=\"$1\"' --"
+language = "system"
+pass_filenames = true
+stages = ["commit-msg"]

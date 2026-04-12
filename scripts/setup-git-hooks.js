@@ -69,16 +69,30 @@ function patchInstalledPrekHooks() {
 			continue;
 		}
 
+		// Use robust regex to match any final exec line with optional whitespace
+		const execPattern = /^(\s*)exec\s+"\$PREK"\s+hook-impl/m;
+		const match = hookContent.match(execPattern);
+
+		if (!match) {
+			console.warn(`Warning: No exec "$PREK" hook-impl pattern found in ${hookName}`);
+			continue;
+		}
+
 		const patched = hookContent.replace(
-			'fi\n\nexec "$PREK" hook-impl',
-			`fi\n\n${PREK_HOOK_PATCH}exec "$PREK" hook-impl`,
+			execPattern,
+			`${PREK_HOOK_PATCH}${match[1]}exec "$PREK" hook-impl`,
 		);
+
 		if (patched === hookContent) {
 			continue;
 		}
 
-		writeFileSync(hookPath, patched);
-		patchedCount += 1;
+		try {
+			writeFileNoFollow(hookPath, patched);
+			patchedCount += 1;
+		} catch (error) {
+			console.warn(`Warning: Failed to patch ${hookName}: ${error.message}`);
+		}
 	}
 
 	return patchedCount;
@@ -105,18 +119,24 @@ function main() {
 		delete packageJson.devDependencies["simple-git-hooks"];
 		console.info("✓ Removed legacy hook dependency metadata");
 		modified = true;
+	} else {
+		console.debug("No legacy hook dependency found");
 	}
 
 	if (packageJson.scripts?.postinstall?.includes("simple-git-hooks")) {
 		delete packageJson.scripts.postinstall;
 		console.info("✓ Removed legacy hook postinstall bootstrap");
 		modified = true;
+	} else {
+		console.debug("No legacy hook postinstall found");
 	}
 
 	if (packageJson["simple-git-hooks"]) {
 		delete packageJson["simple-git-hooks"];
 		console.info("✓ Removed legacy top-level hook configuration");
 		modified = true;
+	} else {
+		console.debug("No legacy top-level hook configuration found");
 	}
 
 	if (modified) {

@@ -49,7 +49,8 @@
     "test:artifacts:unit": "bash scripts/test-with-artifacts.sh unit",
     "test:artifacts:integration": "bash scripts/test-with-artifacts.sh integration",
     "test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e",
-    "postinstall": "simple-git-hooks"
+    "verify-work": "bash scripts/verify-work.sh",
+    "verify-work:workspace": "bash scripts/verify-work.sh --workspace-governance"
   },
   "dependencies": {
     "yargs": "^18.0.0"
@@ -61,7 +62,6 @@
     "@types/node": "^25.5.0",
     "@types/yargs": "^17.0.32",
     "markdownlint-cli2": "^0.22.0",
-    "simple-git-hooks": "^2.13.1",
     "tsup": "^8.0.2",
     "tsx": "^4.7.1",
     "typescript": "^5.9.3",
