@@ -100,7 +100,7 @@ function resolveCliVersion(): string {
   const envVersion = process.env.npm_package_version?.trim();
   if (envVersion) {
     cachedVersion = envVersion;
-    return cachedVersion;
+    return envVersion;
   }
 
   try {
@@ -109,8 +109,9 @@ function resolveCliVersion(): string {
     const raw = fs.readFileSync(packagePath, "utf8");
     const parsed = JSON.parse(raw) as { version?: string };
     if (parsed.version && parsed.version.trim().length > 0) {
-      cachedVersion = parsed.version.trim();
-      return cachedVersion;
+      const packageVersion = parsed.version.trim();
+      cachedVersion = packageVersion;
+      return packageVersion;
     }
   } catch (error) {
     // no-op: fall back to default version
