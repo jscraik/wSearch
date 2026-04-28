@@ -1021,9 +1021,11 @@ function exitWithStartupError(error: CliError): never {
       process.stdout.write(`${JSON.stringify(payload)}\n`);
     }
     process.exit(error.exitCode);
+    throw new Error("Unreachable after process.exit");
   }
   process.stderr.write(`${error.message}\n`);
   process.exit(error.exitCode);
+  throw new Error("Unreachable after process.exit");
 }
 
 function writeOutputOrThrow(content: string, output?: string): void {
@@ -1064,6 +1066,7 @@ function emitUnhandledCliError(error: unknown): never {
       process.stdout.write(`${JSON.stringify(payload)}\n`);
     }
     process.exit(resolved.exitCode);
+    throw new Error("Unreachable after process.exit");
   }
 
   // Non-JSON mode: agent formatting or plain text
@@ -1071,10 +1074,12 @@ function emitUnhandledCliError(error: unknown): never {
     const help = getErrorHelp(resolved.code, resolved.message);
     process.stderr.write(`${formatAgentError(help, true)}\n`);
     process.exit(resolved.exitCode);
+    throw new Error("Unreachable after process.exit");
   }
 
   process.stderr.write(`${resolved.message}\n`);
   process.exit(resolved.exitCode);
+  throw new Error("Unreachable after process.exit");
 }
 
 const startupArgv = hideBin(process.argv);
@@ -1143,7 +1148,7 @@ cli
   .option("timeout", { type: "number", default: 15000 })
   .option("retries", { type: "number", default: 2 })
   .option("retry-backoff", { type: "number", default: 400 })
-  .check((args) => {
+  .check((args: Arguments) => {
     const globals = args as unknown as CliGlobals;
     // Always validate URL format (not just when network is enabled)
     // This catches invalid URLs even in preview mode
@@ -1738,7 +1743,7 @@ cli
   .recommendCommands()
   .demandCommand(1)
   .exitProcess(false)
-  .fail((msg, err, y) => {
+  .fail((msg: string | null | undefined, err: Error | undefined, y: Argv) => {
     const message = err?.message ?? msg ?? "Unexpected error";
     const isUsageError =
       !err || (err as { name?: string }).name === "YError" || (err instanceof CliError && err.exitCode === 2);
