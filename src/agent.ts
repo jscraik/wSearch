@@ -1,6 +1,6 @@
 /**
  * Agent Mode: AI-friendly command parsing and error handling
- * 
+ *
  * Design goals:
  * 1. Be maximally flexible when intent is clear but syntax has minor issues
  * 2. Provide detailed, actionable error messages with examples
@@ -39,7 +39,7 @@ const FLAG_ALIASES: Record<string, string> = {
   "--online": "--network",
   "--ua": "--user-agent",
   "-ua": "--user-agent",
-  
+
   // Output
   "--j": "--json",
   "-j": "--json",
@@ -47,22 +47,22 @@ const FLAG_ALIASES: Record<string, string> = {
   "-p": "--plain",
   "--out": "--output",
   "-o": "--output",
-  
+
   // Auth
   "--a": "--auth",
   "-a": "--auth",
   "--authenticated": "--auth",
-  
+
   // Preview
   "--dry-run": "--print-request",
   "--preview": "--print-request",
   "--dryrun": "--print-request",
-  
+
   // Interaction
   "--ci": "--non-interactive",
   "--no-prompt": "--non-interactive",
   "--batch": "--non-interactive",
-  
+
   // Agent mode
   "--robot": "--agent",
   "--ai": "--agent",
@@ -180,9 +180,9 @@ export function parseAgentIntent(args: string[]): IntentResult {
     if (note) result.note = note;
     return result;
   }
-  
+
   const joined = args.join(" ");
-  
+
   // Check for explicit intent patterns (shorthand commands)
   for (const { pattern, transform, command } of INTENT_PATTERNS) {
     const match = joined.match(pattern);
@@ -195,7 +195,7 @@ export function parseAgentIntent(args: string[]): IntentResult {
       };
     }
   }
-  
+
   // Just normalize flag aliases
   const normalizedArgs = [...args];
   let note: string | undefined;
@@ -209,7 +209,7 @@ export function parseAgentIntent(args: string[]): IntentResult {
       }
     }
   }
-  
+
   const result: IntentResult = { type: "success", normalized: normalizedArgs };
   if (note) result.note = note;
   return result;
@@ -224,7 +224,7 @@ export function getErrorHelp(
   _attemptedCommand?: string
 ): ErrorHelp {
   // Pattern-based error recognition
-  
+
   if (errorMessage.includes("Invalid entity id") || errorMessage.includes("Q*")) {
     return {
       message: errorMessage,
@@ -249,7 +249,7 @@ export function getErrorHelp(
       fixHint: "Entity IDs must be Q* (items), P* (properties), or L* (lexemes) followed by digits. Check your ID format.",
     };
   }
-  
+
   if (errorMessage.includes("Path must start with") || errorMessage.includes("traversal")) {
     return {
       message: errorMessage,
@@ -269,7 +269,7 @@ export function getErrorHelp(
       fixHint: "Raw request paths must start with '/' and cannot contain '..' or encoded separators like %2F.",
     };
   }
-  
+
   if (errorMessage.includes("Network access is disabled") || errorCode === "E_POLICY") {
     return {
       message: errorMessage,
@@ -289,7 +289,7 @@ export function getErrorHelp(
       fixHint: "All API calls require --network flag (opt-in for safety). Also set --user-agent for Wikimedia APIs.",
     };
   }
-  
+
   if (errorMessage.includes("User-Agent is required")) {
     return {
       message: errorMessage,
@@ -314,7 +314,7 @@ export function getErrorHelp(
       fixHint: "Wikimedia APIs require a User-Agent. Use --user-agent flag, WIKI_USER_AGENT env var, or `wsearch config set user-agent`.",
     };
   }
-  
+
   if (errorMessage.includes("No stored token") || errorCode === "E_AUTH") {
     return {
       message: errorMessage,
@@ -339,7 +339,7 @@ export function getErrorHelp(
       fixHint: "Run `wsearch auth login` first to store a token, or omit --auth for unauthenticated requests.",
     };
   }
-  
+
   if (errorMessage.includes("Query input required")) {
     return {
       message: errorMessage,
@@ -364,7 +364,7 @@ export function getErrorHelp(
       fixHint: "Provide SPARQL via --file, --query, or stdin. Use --file for complex queries stored in .rq files.",
     };
   }
-  
+
   if (errorMessage.includes("Provide only one")) {
     return {
       message: errorMessage,
@@ -389,7 +389,7 @@ export function getErrorHelp(
       fixHint: "Choose one input method: --token-file, --token-stdin, or --token-env. Same for passphrase.",
     };
   }
-  
+
   if (errorMessage.includes("must be a valid http(s) URL")) {
     return {
       message: errorMessage,
@@ -409,7 +409,7 @@ export function getErrorHelp(
       fixHint: "URLs must start with http:// or https:// and be valid URL format. Check for typos.",
     };
   }
-  
+
   // Default/generic error help
   return {
     message: errorMessage,
@@ -440,26 +440,26 @@ export function getErrorHelp(
  */
 export function formatAgentError(help: ErrorHelp, agentMode: boolean): string {
   const lines: string[] = [];
-  
+
   lines.push(`Error: ${help.message}`);
   lines.push("");
   lines.push(`Likely intent: ${help.likelyIntent}`);
   lines.push("");
   lines.push("Correct examples:");
-  
+
   for (const ex of help.examples) {
     lines.push(`  $ ${ex.command}`);
     lines.push(`    # ${ex.description} (${ex.context})`);
   }
-  
+
   lines.push("");
   lines.push(`Fix: ${help.fixHint}`);
-  
+
   if (agentMode) {
     lines.push("");
     lines.push("Agent note: When scripting, use --non-interactive and --json for reliable output parsing.");
   }
-  
+
   return lines.join("\n");
 }
 
@@ -483,7 +483,7 @@ export function normalizeEntityId(input: string): string | null {
 export function suggestCommand(attempted: string): string[] {
   const suggestions: string[] = [];
   const lower = attempted.toLowerCase();
-  
+
   // Fuzzy match to known commands
   const knownCommands = ["entity", "auth", "config", "sparql", "action", "raw", "doctor", "help"];
   for (const cmd of knownCommands) {
@@ -495,7 +495,7 @@ export function suggestCommand(attempted: string): string[] {
       suggestions.push(cmd);
     }
   }
-  
+
   return [...new Set(suggestions)].slice(0, 3);
 }
 

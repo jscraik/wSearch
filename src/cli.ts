@@ -344,9 +344,7 @@ function resolveErrorContext(): { mode: "plain" | "json"; output?: string; reque
   const json = hasJsonFlag || (!hasPlainFlag && (lastKnownArgs.json || fallback.json));
   const output = fallback.output ?? lastKnownArgs.output;
 
-  // Detect agent mode: --agent, --agent=true, or --agent=true (yargs formats)
-  const hasAgentFlag = rawArgv.some(a => a === "--agent" || a === "--agent=true" || a.startsWith("--agent="));
-  const agent = Boolean(lastKnownArgs.agent) || hasAgentFlag;
+  const agent = Boolean(lastKnownArgs.agent) || isAgentEnabled(rawArgv);
 
   const context: { mode: "plain" | "json"; output?: string; requestId?: string; agent?: boolean } = json
     ? { mode: "json", agent }
@@ -721,14 +719,18 @@ const mergedDefaults: Partial<CliGlobals> = { ...configDefaults, ...envOverrides
 const rawArgv = hideBin(process.argv);
 let processedArgv = rawArgv;
 
-// Detect agent mode: --agent, --agent=true (but not --agent=false)
+const AGENT_MODE_FLAGS = new Set(["--agent", "--ai", "--robot", "--auto"]);
+
+// Detect agent mode: --agent/--ai/--robot/--auto, with explicit false disabling.
 // Must check BEFORE any rewriting to preserve opt-in contract
 function isAgentEnabled(argv: string[]): boolean {
   for (const arg of argv) {
-    if (arg === "--agent") return true;
-    if (arg === "--agent=true") return true;
-    if (arg === "--agent=false") return false;
-    // Don't treat other --agent=* as enabled (must be explicit true)
+    const [flag = "", value] = arg.split("=", 2);
+    if (!AGENT_MODE_FLAGS.has(flag)) continue;
+    if (value === undefined) return true;
+    if (value === "true") return true;
+    if (value === "false") return false;
+    // Don't treat other --flag=* forms as enabled (must be explicit true)
   }
   return false;
 }
@@ -1690,7 +1692,17 @@ cli
         .option("max-tier", { type: "string", default: "medium" }),
     (args: Arguments) => {
       const globals = args as unknown as CliGlobals & { files?: string };
-      outputResult(globals, "wiki.risk-policy-gate.v1", "Risk policy gate passed", { status: "passed", maxTier: (args as { maxTier?: string }).maxTier || "medium" });
+      const rawMaxTier = (args as { maxTier?: string }).maxTier || "medium";
+      const maxTier = rawMaxTier.toLowerCase();
+      const allowedTiers = new Set(["low", "medium", "high", "critical"]);
+      if (!allowedTiers.has(maxTier)) {
+        throw new CliError(
+          `Invalid max-tier "${rawMaxTier}". Expected one of: low, medium, high, critical.`,
+          2,
+          "E_VALIDATION"
+        );
+      }
+      outputResult(globals, "wiki.risk-policy-gate.v1", "Risk policy gate passed", { status: "passed", maxTier });
     }
   )
   .command(
