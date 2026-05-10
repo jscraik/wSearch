@@ -82,6 +82,7 @@ if [ "$SCOPE" = "project-local" ]; then
   tmp_metrics="$(mktemp)"
   tmp_rollout_out="$(mktemp)"
   tmp_docstring_out="$(mktemp)"
+  trap 'rm -f "$tmp_inventory" "$tmp_classification" "$tmp_metrics" "$tmp_rollout_out" "$tmp_docstring_out"' EXIT
 
   cat >"$tmp_inventory" <<EOF
 {
@@ -122,7 +123,6 @@ EOF
     --window-days 14 \
     --out "$tmp_docstring_out"
 
-  rm -f "$tmp_inventory" "$tmp_classification" "$tmp_metrics" "$tmp_rollout_out" "$tmp_docstring_out"
   echo "verify-work: project-local governance checks passed"
   exit 0
 fi
@@ -132,41 +132,19 @@ if [ ! -f "$MANIFEST" ]; then
   exit 1
 fi
 
-inventory="$(python3 - "$MANIFEST" <<'PY'
+read -r inventory classification metrics rollout_out docstring_out < <(python3 - "$MANIFEST" <<'PY'
 import json
 import sys
 doc = json.load(open(sys.argv[1], encoding="utf-8"))
-print(doc.get("inventory", ""))
+print(
+    doc.get("inventory", ""),
+    doc.get("classification", ""),
+    doc.get("metrics", ""),
+    doc.get("rollout_out", "docs/hooks-governance/rollout-check-report.json"),
+    doc.get("docstring_out", "docs/hooks-governance/docstring-ratchet-report.json"),
+)
 PY
-)"
-classification="$(python3 - "$MANIFEST" <<'PY'
-import json
-import sys
-doc = json.load(open(sys.argv[1], encoding="utf-8"))
-print(doc.get("classification", ""))
-PY
-)"
-metrics="$(python3 - "$MANIFEST" <<'PY'
-import json
-import sys
-doc = json.load(open(sys.argv[1], encoding="utf-8"))
-print(doc.get("metrics", ""))
-PY
-)"
-rollout_out="$(python3 - "$MANIFEST" <<'PY'
-import json
-import sys
-doc = json.load(open(sys.argv[1], encoding="utf-8"))
-print(doc.get("rollout_out", "docs/hooks-governance/rollout-check-report.json"))
-PY
-)"
-docstring_out="$(python3 - "$MANIFEST" <<'PY'
-import json
-import sys
-doc = json.load(open(sys.argv[1], encoding="utf-8"))
-print(doc.get("docstring_out", "docs/hooks-governance/docstring-ratchet-report.json"))
-PY
-)"
+)
 
 if [ -z "$inventory" ] || [ -z "$classification" ] || [ -z "$metrics" ]; then
   echo "Manifest must include inventory, classification, and metrics paths."

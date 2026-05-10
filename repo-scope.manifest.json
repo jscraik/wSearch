@@ -2,6 +2,6 @@
   "inventory": "docs/hooks-governance/repo-profile-matrix.json",
   "classification": "docs/hooks-governance/public-api-classification.json",
   "metrics": "docs/hooks-governance/docstring-ratchet-metrics.json",
-  "rollout_out": "docs/hooks-governance/rollout-check-report.json",
-  "docstring_out": "docs/hooks-governance/docstring-ratchet-report.json"
+  "rollout_out": ".tmp/rollout-check-report.json",
+  "docstring_out": ".tmp/docstring-ratchet-report.json"
 }

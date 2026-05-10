@@ -27,5 +27,5 @@ If two instructions conflict at the same priority level, stop and ask the user w
 - Development workflow: `/Users/jamiecraik/dev/wsearch/docs/DEVELOPMENT.md`
 - Contribution guide: `/Users/jamiecraik/dev/wsearch/CONTRIBUTING.md`
 - Public docs index: `/Users/jamiecraik/dev/wsearch/docs/README.md`
-- Tooling inventory: `/Users/jamiecraik/dev/wsearch/docs/agents/tooling.md`
-- Hook-governance scope defaults: `/Users/jamiecraik/dev/wsearch/docs/agents/hook-governance-scope-defaults.md`
+- Tooling inventory: `./tooling.md`
+- Hook-governance scope defaults: `./hook-governance-scope-defaults.md`

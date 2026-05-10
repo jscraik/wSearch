@@ -45,7 +45,7 @@ tasks:
     depends_on: [T9]
     status: completed
 
-external_dep: "/Users/jamiecraik/.codex/worktrees/484a/agent-skills/backend/cli-spec#cli-spec-stable"
+external_dep: "cli-spec#cli-spec-stable"
 ```
 
 ## Implementation Status: COMPLETE ✅
