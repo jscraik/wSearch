@@ -169,9 +169,12 @@ export function parseAgentIntent(args: string[]): IntentResult {
     for (let i = 0; i < normalizedArgs.length; i++) {
       const arg = normalizedArgs[i];
       if (arg && (arg.startsWith("--") || arg.startsWith("-"))) {
-        const normalized = FLAG_ALIASES[arg.toLowerCase()];
-        if (normalized && normalized !== arg) {
-          normalizedArgs[i] = normalized;
+        const eqIndex = arg.indexOf("=");
+        const flag = eqIndex >= 0 ? arg.slice(0, eqIndex) : arg;
+        const value = eqIndex >= 0 ? arg.slice(eqIndex) : "";
+        const normalized = FLAG_ALIASES[flag.toLowerCase()];
+        if (normalized && normalized !== flag) {
+          normalizedArgs[i] = `${normalized}${value}`;
           note = `Normalized flag "${arg}" to "${normalized}". Use the standard form in the future.`;
         }
       }

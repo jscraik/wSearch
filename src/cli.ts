@@ -715,11 +715,26 @@ try {
 }
 const mergedDefaults: Partial<CliGlobals> = { ...configDefaults, ...envOverrides };
 
-// Agent mode: pre-parse argv to apply intent recognition and normalizations
-const rawArgv = hideBin(process.argv);
-let processedArgv = rawArgv;
-
 const AGENT_MODE_FLAGS = new Set(["--agent", "--ai", "--robot", "--auto"]);
+const AGENT_MODE_FLAG_ALIASES = new Map([
+  ["--ai", "--agent"],
+  ["--robot", "--agent"],
+  ["--auto", "--agent"],
+]);
+
+function normalizeAgentModeFlagAliases(argv: string[]): string[] {
+  return argv.map((arg) => {
+    const eqIndex = arg.indexOf("=");
+    const flag = eqIndex >= 0 ? arg.slice(0, eqIndex) : arg;
+    const value = eqIndex >= 0 ? arg.slice(eqIndex) : "";
+    const normalized = AGENT_MODE_FLAG_ALIASES.get(flag);
+    return normalized ? `${normalized}${value}` : arg;
+  });
+}
+
+// Agent mode: pre-parse argv to apply intent recognition and normalizations
+const rawArgv = normalizeAgentModeFlagAliases(hideBin(process.argv));
+let processedArgv = rawArgv;
 
 // Detect agent mode: --agent/--ai/--robot/--auto, with explicit false disabling.
 // Must check BEFORE any rewriting to preserve opt-in contract

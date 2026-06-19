@@ -59,6 +59,22 @@ describe("cli error handling", () => {
     expect(payload.errors?.[0]?.code).toBe("E_USAGE");
   });
 
+  it("accepts explicit true values for agent-mode aliases", () => {
+    const result = runCli(["--ai=true", "--json", "doctor"]);
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    const payload = JSON.parse(result.stdout.trim());
+    expect(payload.schema).toBe("wiki.doctor.v1");
+  });
+
+  it("accepts explicit false values for agent-mode aliases without enabling agent mode", () => {
+    const result = runCli(["--ai=false", "--json", "doctor"]);
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    const payload = JSON.parse(result.stdout.trim());
+    expect(payload.schema).toBe("wiki.doctor.v1");
+  });
+
   it("renders help command cleanly even when --json and --plain are both provided", () => {
     const result = runCli(["--json", "--plain", "help"]);
     expect(result.error).toBeUndefined();
