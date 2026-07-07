@@ -13,3 +13,4 @@ coverage
 
 FORJAMIE.md
 /.codex/hook-conformance.json
+.codex/config.toml

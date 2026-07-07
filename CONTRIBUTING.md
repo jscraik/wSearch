@@ -71,3 +71,7 @@ npm run build
 - Update `CHANGELOG.md` for user-facing changes.
 - Use SemVer for version changes.
 - Tag releases with `vX.Y.Z`.
+
+## Link Policy
+
+No third-party directory, marketplace, mirror, sponsorship, or promotional links without maintainer approval.

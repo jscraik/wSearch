@@ -134,6 +134,7 @@ OS="$(uname -s)"
 verify_gh && exit 0
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
+  # shellcheck disable=SC2006
   echo "[ERROR] GitHub CLI (`gh`) is not installed."
   echo "Run scripts/ensure-gh-cli.sh to install it automatically when possible."
   exit 1
