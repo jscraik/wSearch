@@ -23,10 +23,12 @@ prepend_standard_tool_paths() {
 prepend_standard_tool_paths
 
 if [[ "${BASH_VERSINFO[0]:-0}" -lt 4 && -z "${CHECK_ENVIRONMENT_REEXECED:-}" ]]; then
-	if [[ -x "/opt/homebrew/bin/bash" ]]; then
+	for bash_candidate in "/opt/homebrew/bin/bash" "/usr/local/bin/bash"; do
+		if [[ -x "$bash_candidate" ]]; then
 		export CHECK_ENVIRONMENT_REEXECED=1
-		exec "/opt/homebrew/bin/bash" "$0" "$@"
-	fi
+		exec "$bash_candidate" "$0" "$@"
+		fi
+	done
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
