@@ -19,13 +19,13 @@ wsearch --print-request entity get Q42
 
 ## Why wSearch?
 
-| Without wSearch | With wSearch |
-|-----------------|--------------|
-| Craft curl commands by hand | Purpose-built Wikidata commands |
-| Handle auth tokens insecurely | Encrypted storage (scrypt + AES-256-GCM) |
-| Parse inconsistent JSON | Schema-versioned output you can rely on |
-| Retry logic? You build it | Automatic retries with exponential backoff |
-| Guess if commands work | Preview mode shows exactly what will be sent |
+| Without wSearch                | With wSearch                                  |
+| ------------------------------ | --------------------------------------------- |
+| Craft curl commands by hand    | Purpose-built Wikidata commands               |
+| Handle auth tokens insecurely  | Encrypted storage (scrypt + AES-256-GCM)      |
+| Parse inconsistent JSON        | Schema-versioned output you can rely on       |
+| Retry logic? You build it      | Automatic retries with exponential backoff    |
+| Guess if commands work         | Preview mode shows exactly what will be sent  |
 | Confusing errors for AI agents | **Agent mode** with detailed, actionable help |
 
 **Read-only by default.** Network disabled until you explicitly enable it. No accidental data changes.
@@ -102,6 +102,7 @@ wsearch --network --plain entity get Q42 | grep -o Q[0-9]*
 ```
 
 JSON output includes:
+
 - Schema version (e.g., `wiki.entity.get.v1`)
 - Request ID tracking
 - Structured errors with codes
@@ -109,23 +110,23 @@ JSON output includes:
 
 ## Security Features
 
-| Feature | What it does |
-|---------|--------------|
-| **Network opt-in** | `--network` required for all API calls; disabled by default |
-| **Encrypted tokens** | scrypt + AES-256-GCM with 0o600 file permissions |
+| Feature                       | What it does                                                |
+| ----------------------------- | ----------------------------------------------------------- |
+| **Network opt-in**            | `--network` required for all API calls; disabled by default |
+| **Encrypted tokens**          | scrypt + AES-256-GCM with 0o600 file permissions            |
 | **Path traversal prevention** | Raw requests validated; no .. or encoded separators allowed |
-| **Token redaction** | Authorization headers redacted in logs and previews |
-| **No secrets in args** | Tokens only via files, stdin, or env vars—never CLI args |
+| **Token redaction**           | Authorization headers redacted in logs and previews         |
+| **No secrets in args**        | Tokens only via files, stdin, or env vars—never CLI args    |
 
 ## Exit Codes for Automation
 
-| Code | Meaning | When you will see it |
-|------|---------|-------------------|
-| 0 | Success | Command completed |
-| 1 | Internal error | Unexpected failure, I/O error |
-| 2 | Usage error | Invalid arguments or validation failure |
-| 3 | Policy error | Missing `--network` or `--user-agent` |
-| 130 | Interrupted | User pressed Ctrl+C |
+| Code | Meaning        | When you will see it                    |
+| ---- | -------------- | --------------------------------------- |
+| 0    | Success        | Command completed                       |
+| 1    | Internal error | Unexpected failure, I/O error           |
+| 2    | Usage error    | Invalid arguments or validation failure |
+| 3    | Policy error   | Missing `--network` or `--user-agent`   |
+| 130  | Interrupted    | User pressed Ctrl+C                     |
 
 Use `--non-interactive` in scripts to ensure commands never hang on prompts.
 
@@ -150,16 +151,19 @@ wsearch --network --auth entity get Q42
 ## Practical Examples
 
 ### Save entity to file
+
 ```bash
 wsearch --network --user-agent "MyApp/1.0" entity get Q42 --output Q42.json
 ```
 
 ### SPARQL to CSV for Excel
+
 ```bash
 wsearch --network --user-agent "MyApp/1.0" sparql query --file query.rq --format csv > results.csv
 ```
 
 ### Batch process in a script
+
 ```bash
 #!/bin/bash
 set -euo pipefail
@@ -173,6 +177,7 @@ done
 ```
 
 ### Preview before automation
+
 ```bash
 wsearch --print-request --user-agent "Test/1.0" entity get Q42
 # Shows: method, URL, headers (tokens redacted)
@@ -191,6 +196,7 @@ wsearch --agent --network --non-interactive --json \
 ```
 
 **Agent mode features:**
+
 - **Flexible parsing**: `wsearch get q42` → normalized to `entity get Q42` (when combined with full command: `wsearch --agent --network --user-agent "Agent/1.0" get q42`)
 - **Detailed errors**: Every error includes context, examples, and fix hints
 - **Intent recognition**: Understands common shorthand patterns
@@ -213,3 +219,9 @@ Apache 2.0 — See [LICENSE](LICENSE)
 ---
 
 **brAInwav** — _from demo to duty_
+
+## Distribution
+
+Official installation instructions are maintained in this repository only.
+
+Third-party indexes or mirrors may list this project, but they are not affiliated with, endorsed by, or maintained by this project unless explicitly stated here.

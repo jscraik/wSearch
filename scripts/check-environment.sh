@@ -1,7 +1,35 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Local environment check using repo-canonical tooling inventory.
 
 set -euo pipefail
+
+prepend_standard_tool_paths() {
+	local candidate
+	for candidate in \
+		"$HOME/.local/share/mise/shims" \
+		"$HOME/.local/bin" \
+		"/opt/homebrew/bin" \
+		"/opt/homebrew/sbin" \
+		"/usr/local/bin" \
+		"/usr/sbin" \
+		"/sbin"; do
+		if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
+			PATH="$candidate:$PATH"
+		fi
+	done
+	export PATH
+}
+
+prepend_standard_tool_paths
+
+if [[ "${BASH_VERSINFO[0]:-0}" -lt 4 && -z "${CHECK_ENVIRONMENT_REEXECED:-}" ]]; then
+	for bash_candidate in "/opt/homebrew/bin/bash" "/usr/local/bin/bash"; do
+		if [[ -x "$bash_candidate" ]]; then
+		export CHECK_ENVIRONMENT_REEXECED=1
+		exec "$bash_candidate" "$0" "$@"
+		fi
+	done
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
