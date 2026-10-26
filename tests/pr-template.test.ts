@@ -43,6 +43,12 @@ describe('actual PR template workflow', () => {
     expect(validate(body.replace('- CodeRabbit: Pending included review.', '- CodeRabbit:'))).not.toEqual([]);
     expect(validate(body.replace('- Codex: https://github.com/example/repo/pull/1#issuecomment-1', ''))).not.toEqual([]);
   });
+  it('rejects untouched instructions containing the word pending', () => {
+    const template = readFileSync(new URL('../.github/PULL_REQUEST_TEMPLATE.md', import.meta.url), 'utf8');
+    const fields = template.split('## Review artifacts\n')[1]?.split('\n## Notes')[0];
+    expect(fields).toBeTruthy();
+    expect(validate(body.replace(/## Review artifacts\n[\s\S]*?\n## Notes/, `## Review artifacts\n${fields}\n## Notes`))).not.toEqual([]);
+  });
   it('retains checklist and required-heading rejection', () => {
     expect(validate(body.replace('[x]', '[ ]'))).not.toEqual([]);
     expect(validate(body.replace('## Summary', '## Removed'))).not.toEqual([]);

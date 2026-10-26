@@ -45,7 +45,8 @@ jobs:
             const reviews = body.match(/^## Review artifacts\s*\n([\s\S]*?)(?=^#{1,2} |$(?![\s\S]))/m)?.[1] ?? '';
             for (const reviewer of ['CodeRabbit', 'Codex']) {
               const field = reviews.split('\n').find(line => line.startsWith('- ' + reviewer + ':')) ?? '';
-              if (!/https:\/\/\S+|\bPending\b/i.test(field)) {
+              const value = field.slice(('- ' + reviewer + ':').length).trim();
+              if (!/^(?:Pending\b|https:\/\/\S+|\[[^\]\n]+\]\(https:\/\/[^)\s]+\))/i.test(value)) {
                 errors.push(reviewer + ' requires a review URL or explicit Pending status.');
               }
             }
