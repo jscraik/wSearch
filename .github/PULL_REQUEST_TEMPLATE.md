@@ -68,3 +68,16 @@ Session: `[PROMPT: ai/sessions/YYYY-MM-DD-<slug>.json]`
 ## Release notes
 
 Release note: [PROMPT: user-facing note, or "None".]
+
+## Testing
+
+Record exact verification commands, outcomes, and any blocked steps.
+
+## Review artifacts
+
+- CodeRabbit: Record the review link or an explicit pending status.
+- Codex: Record the review link or an explicit pending status.
+
+## Notes
+
+Describe remaining validation limitations and readiness blockers.
