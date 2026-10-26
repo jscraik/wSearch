@@ -14,7 +14,7 @@ jobs:
         run: bash scripts/ensure-gh-cli.sh
       - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: "22.12.0"
           cache: npm
       - run: npm ci
       - run: npm run lint:types

@@ -23,7 +23,7 @@ Last updated: 2026-01-04
 - Required approvals: maintainers for public changes.
 
 ## Prerequisites
-- Required: Node.js 18+, npm, and internet access.
+- Required: Node.js 22.12.0 or newer, npm, and internet access.
 - Required: a descriptive User-Agent string for Wikimedia APIs.
 - Optional: OAuth token (encrypted locally) if you want authenticated requests.
 

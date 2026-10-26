@@ -38,7 +38,7 @@ wsearch --print-request entity get Q42
 npm install -g @brainwav/wsearch-cli
 ```
 
-Requires Node.js 18+.
+Requires Node.js 22.12.0 or newer.
 
 ## Quick Start
 

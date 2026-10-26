@@ -21,7 +21,7 @@ Last updated: 2026-01-04
 - Required approvals: maintainers for public changes.
 
 ## Prerequisites
-- Node.js 18+ and npm.
+- Node.js 22.12.0 or newer and npm.
 - A descriptive User-Agent for Wikimedia APIs when running live queries.
 
 ## Local setup
