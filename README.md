@@ -1,5 +1,7 @@
 # wSearch CLI
 
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/jscraik/wSearch?utm_source=oss&utm_medium=github&utm_campaign=jscraik%2FwSearch&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+
 [![npm](https://img.shields.io/npm/v/@brainwav/wsearch-cli?color=d97757)](https://www.npmjs.com/package/@brainwav/wsearch-cli)
 [![ci](https://github.com/jscraik/wSearch-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/jscraik/wSearch-CLI/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-Apache%202.0-788c5d)](LICENSE)
