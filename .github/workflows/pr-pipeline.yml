@@ -1,6 +1,8 @@
 name: Harness PR Pipeline
 
-on: pull_request
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
 
 permissions:
   contents: read
@@ -33,6 +35,19 @@ jobs:
             for (const section of requiredSections) {
               if (!body.includes(section)) {
                 errors.push('Missing required section: ' + section);
+              }
+            }
+
+            const testing = body.match(/^## Testing\s*\n([\s\S]*?)(?=^#{1,2} |$(?![\s\S]))/m)?.[1] ?? '';
+            if (!/^- Command: `[^`\n]+` -> (?:pass|fail|blocked)(?:[ .(]|$)/m.test(testing)) {
+              errors.push('Testing requires an exact Command and pass, fail, or blocked outcome.');
+            }
+            const reviews = body.match(/^## Review artifacts\s*\n([\s\S]*?)(?=^#{1,2} |$(?![\s\S]))/m)?.[1] ?? '';
+            for (const reviewer of ['CodeRabbit', 'Codex']) {
+              const field = reviews.split('\n').find(line => line.startsWith('- ' + reviewer + ':')) ?? '';
+              const value = field.slice(('- ' + reviewer + ':').length).trim();
+              if (!/^(?:Pending\b|https:\/\/\S+|\[[^\]\n]+\]\(https:\/\/[^)\s]+\))/i.test(value)) {
+                errors.push(reviewer + ' requires a review URL or explicit Pending status.');
               }
             }
 

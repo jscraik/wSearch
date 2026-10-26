@@ -22,7 +22,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "build": "tsup",
@@ -55,15 +55,10 @@
   "dependencies": {
     "yargs": "^18.0.0"
   },
-  "overrides": {
-    "js-yaml": "4.2.0",
-    "markdown-it": "14.2.0",
-    "smol-toml": "1.6.1"
-  },
   "devDependencies": {
     "@types/node": "^26.0.0",
     "@types/yargs": "^17.0.32",
-    "markdownlint-cli2": "^0.22.0",
+    "markdownlint-cli2": "^0.24.0",
     "tsup": "^8.0.2",
     "tsx": "^4.7.1",
     "typescript": "^6.0.3",

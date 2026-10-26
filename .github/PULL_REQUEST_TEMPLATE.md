@@ -16,9 +16,7 @@ Closes #[PROMPT: #123] (or explain why none exists)
 
 [PROMPT: Exact commands + expected outcomes.]
 
-- [PROMPT: e.g. pnpm test]
-- [PROMPT: e.g. pnpm lint]
-- [PROMPT: e.g. pnpm build]
+Include the repository's test, lint and build commands as applicable.
 
 ## Risk & rollout
 
@@ -36,9 +34,11 @@ Rollback plan: [PROMPT: Concrete rollback steps if needed.]
 ## AI assistance
 
 - [ ] This PR was created with AI assistance (mark with `[AI]` in title if applicable)
-- [ ] Testing level: untested / lightly tested / fully tested
+- [ ] Testing level is recorded below
 - [ ] I understand what the code does and can explain it
 - [ ] Prompts or session logs included (Optional, but helpful)
+
+- Testing level: State untested, lightly tested or fully tested with evidence.
 
 Prompt: `[PROMPT: ai/prompts/YYYY-MM-DD-<slug>.yaml]`
 Session: `[PROMPT: ai/sessions/YYYY-MM-DD-<slug>.json]`
@@ -68,3 +68,16 @@ Session: `[PROMPT: ai/sessions/YYYY-MM-DD-<slug>.json]`
 ## Release notes
 
 Release note: [PROMPT: user-facing note, or "None".]
+
+## Testing
+
+Record exact verification commands, outcomes, and any blocked steps.
+
+## Review artifacts
+
+- CodeRabbit: Record the review link or an explicit pending status.
+- Codex: Record the review link or an explicit pending status.
+
+## Notes
+
+Describe remaining validation limitations and readiness blockers.

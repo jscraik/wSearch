@@ -22,7 +22,7 @@ Last updated: 2026-01-04
 - Required approvals: maintainers for public changes.
 
 ## Prerequisites
-- Required: Node.js 18+, npm.
+- Required: Node.js 22.12.0 or newer, npm.
 
 ## Quickstart
 ### 1) Confirm the CLI is installed
