@@ -8,7 +8,8 @@ Follow this policy before running commands.
 - [Do not do](#do-not-do)
 
 ## Command shell
-- Use `zsh -lc` for shell commands.
+- Use the configured non-login shell. Use a login shell only for a bounded
+  shell-startup investigation.
 - Keep command output reads short (prefer targeted context).
 
 ## Preferred tools
