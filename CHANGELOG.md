@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
-Last updated: 2026-01-04
+Last updated: 2026-11-24
 
 ## Document requirements
 - Audience: users and maintainers tracking release history.
@@ -29,6 +29,8 @@ Last updated: 2026-01-04
 - [2026-02-23] [d382ede] chore(deps): bump actions/checkout from 4 to 6 (#22)
 
 ### Fixed
+
+- Complete README onboarding with an offline request preview, a copyable SPARQL query file, explicit User-Agent flags, and creation of the batch output directory.
 
 ## [0.2.0] - 2026-01-04
 
