@@ -1,23 +1,47 @@
 # wSearch CLI
 
+Get data from Wikidata with a CLI. Read entities, search by name, and save SPARQL results for a spreadsheet or
+script. You choose when to make network calls. Preview a request first with no network access.
+
+## Quick Start
+
+Requires **Node.js 22.12.0 or newer** and npm. From any directory:
+
+```bash
+npm install -g @brainwav/wsearch-cli
+wsearch --print-request entity get Q42
+```
+
+**First result:** this request preview, with no API call, account, or token needed:
+
+```json
+{
+  "method": "GET",
+  "url": "https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/Q42",
+  "headers": {
+    "accept": "application/json"
+  }
+}
+```
+
+To fetch the entity, replace the sample contact address with yours, then run:
+
+```bash
+wsearch --network --user-agent "MyApp/1.0 (you@example.com)" --json entity get Q42
+```
+
+The response has a `wiki.entity.get.v1` envelope with the live entity in `data`. API commands need `--network` and
+`--user-agent`. Use a User-Agent that names your app and gives a way to contact you. Replace the sample app names in
+the examples with your own.
+
+Next: [create a SPARQL query file](#sparql-to-csv-for-excel), [save an entity](#save-entity-to-file), or [choose an
+output format](#output-formats).
+
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/jscraik/wSearch?utm_source=oss&utm_medium=github&utm_campaign=jscraik%2FwSearch&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 [![npm](https://img.shields.io/npm/v/@brainwav/wsearch-cli?color=d97757)](https://www.npmjs.com/package/@brainwav/wsearch-cli)
-[![ci](https://github.com/jscraik/wSearch-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/jscraik/wSearch-CLI/actions/workflows/ci.yml)
+[![ci](https://github.com/jscraik/wSearch/actions/workflows/ci.yml/badge.svg)](https://github.com/jscraik/wSearch/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-Apache%202.0-788c5d)](LICENSE)
-
-**Query Wikidata safely from the command line.** Built for automation, designed for humans.
-
-```bash
-# Get an entity
-wsearch --network --user-agent "MyApp/1.0" entity get Q42
-
-# Run SPARQL with CSV output for spreadsheets
-wsearch --network --user-agent "MyApp/1.0" sparql query --file query.rq --format csv
-
-# Preview before you run
-wsearch --print-request entity get Q42
-```
 
 ## Why wSearch?
 
@@ -34,28 +58,12 @@ wsearch --print-request entity get Q42
 
 ## Install
 
-```bash
-npm install -g @brainwav/wsearch-cli
-```
-
-Requires Node.js 22.12.0 or newer.
-
-## Quick Start
-
-```bash
-# 1. Query an entity (items, properties, lexemes)
-wsearch --network --user-agent "MyApp/1.0 (https://example.com)" entity get Q42
-
-# 2. Run SPARQL from a file
-wsearch --network --user-agent "MyApp/1.0" sparql query --file query.rq --format json
-
-# 3. Search by name
-wsearch --network --user-agent "MyApp/1.0" action search --query "Paris" --limit 5
-```
-
-API commands require `--network` (opt-in for safety) and `--user-agent` (Wikimedia API requirement).
+Use the npm installation in [Quick Start](#quick-start). For a local development checkout, see
+[Contributing](#contributing).
 
 ## Core Commands
+
+The SPARQL commands use the `query.rq` file created in [SPARQL to CSV for Excel](#sparql-to-csv-for-excel).
 
 ```bash
 # Entities: get data or statements for any Q/P/L ID
@@ -81,7 +89,7 @@ wsearch config get user-agent
 
 # Authentication: encrypted token storage
 wsearch auth login                        # Store token securely
-wsearch --network --auth entity get Q42   # Use stored token
+wsearch --network --auth --user-agent "MyApp/1.0" entity get Q42 # Use stored token
 wsearch auth logout                       # Remove stored token
 
 # Diagnostics
@@ -97,10 +105,10 @@ wsearch --print-request entity get Q42    # Preview without sending
 
 ```bash
 # JSON: structured, schema-versioned, ideal for automation
-wsearch --network --json entity get Q42 | jq .data.labels.en.value
+wsearch --network --user-agent "MyApp/1.0" --json entity get Q42 | jq .data
 
 # Plain: pipe-friendly, predictable
-wsearch --network --plain entity get Q42 | grep -o Q[0-9]*
+wsearch --network --user-agent "MyApp/1.0" --plain entity get Q42
 ```
 
 JSON output includes:
@@ -160,9 +168,31 @@ wsearch --network --user-agent "MyApp/1.0" entity get Q42 --output Q42.json
 
 ### SPARQL to CSV for Excel
 
+Choose a folder for the query and its results. Create `query.rq` with the query below. It asks for three items. Run
+this in Bash or another POSIX shell.
+
 ```bash
-wsearch --network --user-agent "MyApp/1.0" sparql query --file query.rq --format csv > results.csv
+cat > query.rq <<'SPARQL'
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+SELECT ?item ?itemLabel WHERE {
+  VALUES ?item { wd:Q42 wd:Q5 wd:Q30 }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 3
+SPARQL
 ```
+
+Preview the request, then fetch the CSV (replace the sample User-Agent contact):
+
+```bash
+wsearch --print-request sparql query --file query.rq --format csv
+wsearch --network --user-agent "MyApp/1.0 (you@example.com)" sparql query --file query.rq --format csv > results.csv
+```
+
+Open `results.csv` in your spreadsheet app. It should have `item` and `itemLabel` columns and up to three rows. The
+labels come from the live service and may change.
 
 ### Batch process in a script
 
@@ -170,6 +200,7 @@ wsearch --network --user-agent "MyApp/1.0" sparql query --file query.rq --format
 #!/bin/bash
 set -euo pipefail
 
+mkdir -p entities
 for id in Q42 Q5 Q30; do
   wsearch --network --json --non-interactive \
     --user-agent "Batch/1.0" \
@@ -199,7 +230,8 @@ wsearch --agent --network --non-interactive --json \
 
 **Agent mode features:**
 
-- **Flexible parsing**: `wsearch get q42` → normalized to `entity get Q42` (when combined with full command: `wsearch --agent --network --user-agent "Agent/1.0" get q42`)
+- **Flexible parsing**: `wsearch get q42` → normalized to `entity get Q42` (when combined with full command:
+  `wsearch --agent --network --user-agent "Agent/1.0" get q42`)
 - **Detailed errors**: Every error includes context, examples, and fix hints
 - **Intent recognition**: Understands common shorthand patterns
 - **Consistent JSON**: Schema-versioned output for reliable parsing
@@ -214,6 +246,24 @@ See [docs/AGENTS.md](docs/AGENTS.md) for complete agent integration guide.
 - [Troubleshooting](docs/TROUBLESHOOTING.md) — Common issues and fixes
 - [AI Agent Guide](docs/AGENTS.md) — Using wsearch from AI agents
 
+## Contributing
+
+Use a local checkout to build and validate the CLI:
+
+```bash
+git clone https://github.com/jscraik/wSearch.git
+cd wSearch
+npm ci
+npm run lint:types
+npm test
+npm run build
+node dist/cli.js --print-request entity get Q42
+```
+
+The last command prints a request without sending it. See [CONTRIBUTING.md](CONTRIBUTING.md) for docs checks,
+security checks, and PR requirements. The managed agent scaffold in `AGENTS.md` uses paths on the maintainer's
+workstation. You do not need those files to install or run the CLI.
+
 ## License
 
 Apache 2.0 — See [LICENSE](LICENSE)
@@ -226,4 +276,5 @@ Apache 2.0 — See [LICENSE](LICENSE)
 
 Official installation instructions are maintained in this repository only.
 
-Third-party indexes or mirrors may list this project, but they are not affiliated with, endorsed by, or maintained by this project unless explicitly stated here.
+Third-party indexes or mirrors may list this project, but they are not affiliated with, endorsed by, or maintained
+by this project unless explicitly stated here.
